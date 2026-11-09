@@ -262,92 +262,74 @@ def duplicated_junctions(df, junction_dict, speciesName):
 def removeJuntions(orthologs_group_2, orthologs_group_1, speciesName):
     """
     In `orthologs_group_2` detect junction pairs where a coordinate is the end of one
-    junction and the start of another. For each pair (end_j, start_j) where the shared
-    coordinate matches, check `orthologs_group_1` for either junction in the pair. If one
-    of them is present in `orthologs_group_1`, take the other row's partner junction column
-    (`m_junction` when `speciesName=='m'`, `h_junction` when `speciesName=='h'`),
-    negate its start/end coordinates and write those negatives into the partner column
-    of the other junction in `orthologs_group_2`.
+    junction and the start of another. Check `orthologs_group_1` for those junctions.
+    If one of them is found in `orthologs_group_1`, remove the other one from 
+    `orthologs_group_2`.
 
-    Returns a modified copy of `orthologs_group_2` (index preserved as `h_junction`).
+    Returns a modified copy of `orthologs_group_2` with problematic rows removed 
+    (index preserved as `h_junction`).
     """
     og2 = orthologs_group_2.reset_index().copy()
     og1 = orthologs_group_1.reset_index().copy()
 
-    # determine which columns to use
-    # inspect_col: which junction column in og2 we look for end/start pairs
-    # partner_col_in_og1: which column in og1 provides partner coordinates to negate
-    # write_col_in_og2: which column in og2 to replace with negated coordinates
+    # determine which column to inspect based on species
     if speciesName == 'm':
         inspect_col = 'h_junction'
-        partner_col_in_og1 = 'm_junction'
     else:
         inspect_col = 'm_junction'
-        partner_col_in_og1 = 'h_junction'
 
-    if inspect_col not in og2.columns:
+    if inspect_col not in og2.columns or inspect_col not in og1.columns:
         return orthologs_group_2
 
-    # Build maps for og2: start_coords[(chr,start)] -> [junctions], end_coords[(chr,end)] -> [junctions]
-    start_coords = {}
-    end_coords = {}
+    # Create a set of all junctions in og1 for fast lookup
+    og1_junctions = set(og1[inspect_col].astype(str).dropna().unique())
+
+    # Build maps for og2: start_coords and end_coords
+    start_coords = {}  # map: (chr, start) -> [junctions]
+    end_coords = {}    # map: (chr, end) -> [junctions]
+    
     for j in og2[inspect_col].astype(str).dropna().unique():
         try:
             ch, s, e = j.split(":")
-            s_i = f"{ch}:{int(s)}"
-            e_i = f"{ch}:{int(e)}"
+            s_key = (ch, int(s))
+            e_key = (ch, int(e))
+            start_coords.setdefault(s_key, []).append(j)
+            end_coords.setdefault(e_key, []).append(j)
         except Exception:
             continue
-        start_coords.setdefault(s_i, []).append(j)
-        end_coords.setdefault(e_i, []).append(j)
 
-    # prepare quick lookup for og1: map junction string -> partner column value
-    og1_partner = {}
-    if inspect_col in og1.columns and partner_col_in_og1 in og1.columns:
-        for _, r in og1.iterrows():
-            key = str(r.get(inspect_col))
-            val = r.get(partner_col_in_og1)
-            if pd.isna(key) or pd.isna(val):
-                continue
-            og1_partner[key] = str(val)
-
-    # find pairs where a coordinate is end of one and start of another
-    modified = False
+    # Find rows to remove
+    rows_to_remove = set()
+    
+    # Find pairs where one junction's end == another's start
     for coord in set(start_coords.keys()) & set(end_coords.keys()):
-        for end_j in end_coords.get(coord, []):
-            for start_j in start_coords.get(coord, []):
+        end_junctions = end_coords.get(coord, [])
+        start_junctions = start_coords.get(coord, [])
+        
+        for end_j in end_junctions:
+            for start_j in start_junctions:
                 if end_j == start_j:
                     continue
-                # check if either junction exists in og1
-                partner_val = None
-                if end_j in og1_partner:
-                    partner_val = og1_partner[end_j]
-                elif start_j in og1_partner:
-                    partner_val = og1_partner[start_j]
-                if not partner_val:
-                    continue
-                # parse partner_val to get coordinates to negate
-                try:
-                    pch, ps, pe = partner_val.split(":")
-                    ps_i = int(ps)
-                    pe_i = int(pe)
-                except Exception:
-                    continue
-                # apply negation to the OTHER junction (start_j) in og2
-                mask = og2[inspect_col].astype(str) == start_j
-                for ridx in og2[mask].index:
-                    try:
-                        ch0, s0, e0 = str(og2.at[ridx, inspect_col]).split(":")
-                    except Exception:
-                        continue
-                    neg_val = f"{ch0}:{-ps_i}:{-pe_i}"
-                    # ensure write column exists
-                    if inspect_col in og2.columns:
-                        og2.at[ridx, inspect_col] = neg_val
-                        modified = True
+                
+                # Check if either junction is in og1
+                end_j_in_og1 = end_j in og1_junctions
+                start_j_in_og1 = start_j in og1_junctions
+                
+                # If one is found in og1, remove the other from og2
+                if end_j_in_og1 and not start_j_in_og1:
+                    # Remove start_j from og2
+                    mask = og2[inspect_col].astype(str) == start_j
+                    for ridx in og2[mask].index:
+                        rows_to_remove.add(ridx)
+                elif start_j_in_og1 and not end_j_in_og1:
+                    # Remove end_j from og2
+                    mask = og2[inspect_col].astype(str) == end_j
+                    for ridx in og2[mask].index:
+                        rows_to_remove.add(ridx)
 
-    if not modified:
-        return orthologs_group_2
+    # Remove marked rows
+    if rows_to_remove:
+        og2 = og2.drop(index=list(rows_to_remove)).reset_index(drop=True)
 
     # restore index and return
     if 'h_junction' in og2.columns:
