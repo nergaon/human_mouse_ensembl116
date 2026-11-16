@@ -1,0 +1,702 @@
+#!/usr/bin/env python3
+"""
+Letter to the editor and point-by-point response to the reviewers (Frontiers in Immunology, 1982351).
+Output: ensembl116/revision_6ds/Response_to_reviewers.docx and .md (the .md sections can be pasted into
+the Frontiers review forum, one reviewer per thread).
+"""
+from docx import Document
+from docx.shared import Pt, RGBColor
+
+from docx_style_116 import apply_style, finalize
+
+OUT = '/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/revision_6ds/Response_to_reviewers'
+
+LETTER = [
+    ('Dear Editor,'),
+    ('We thank you and the reviewers for the careful evaluation of our manuscript "Alternative splicing use ratio is'
+    ' not conserved between human and mouse immune cells" (manuscript ID 1982351). The reviewers raised two central'
+    ' concerns: that species differences are confounded with dataset, tissue and other biological factors, with '
+    'only one dataset per species in the main comparison and few replicates, and that "splicing unchanged" (no '
+    'significant difference) was interpreted as conservation. We agree with both concerns, and we have '
+    'substantially revised the study to address them. The main changes are:'),
+    ('1. Three independent datasets per species, each with at least three replicates. Each immune cell type is now '
+    'compared between three human datasets (GSE60424, GSE115736 and GSE118165) and three mouse datasets, each with '
+    'three to six replicates of the cell type. As no mouse dataset profiles all five cell types with at least three'
+    ' replicates, the mouse datasets were assembled per cell type from studies of sorted or purified cells of '
+    'unmanipulated or control mice (13 GEO series and one BioProject; Methods 2.2, Tables S2, S3). The mouse '
+    'dataset of the submitted version (GSE116177, two replicates per cell type) is now used only as a tissue '
+    'control, and the short-read GSE180020 (2x38 nucleotides) is no longer used.'),
+    ('2. A classification that separates species from dataset differences. Each event is classified in each cell '
+    'type from all six datasets. Differences between the datasets are tested by a one-way ANOVA (as in our previous'
+    ' study, Ner-Gaon et al. 2023) on the junction with the largest range of dataset PSIs, chosen without using the'
+    ' species labels. An event is splicing conserved if the ANOVA P value is above 0.1 and its PSI varies by at '
+    'most 0.05 across all six datasets in every junction; it is differentially spliced if the ANOVA over the six '
+    'datasets is significant (Benjamini-Hochberg adjusted P ≤ 0.05) and, in at least one junction, the mean human '
+    'and the mean mouse dataset PSI differ by at least 0.1 and every one of the nine human-mouse dataset '
+    'differences is more than 1.5 times every one of the six differences between datasets of the same species. All '
+    'other testable events are inconclusive. To verify that this classification separates species from dataset '
+    'differences, we applied it to the nine other ways of splitting the six datasets into two groups of three, '
+    'which mix the species: a difference of at least 0.1 between the group means alone was found for 55-65% as many'
+    ' events as for the human-mouse split, but with the requirement that every between-group difference exceeds 1.5'
+    ' times every within-group difference, for only 1.5-3.6% as many (2.9-4.9 events per cell type on average; '
+    'Table S6).'),
+    ('3. Splicing conservation instead of "splicing unchanged". In each comparison of two groups of samples (within '
+    'species, fibroblasts and the control comparisons), "splicing unchanged" (no significant difference) was '
+    'replaced by a three-way classification: differentially spliced (LeafCutter adjusted P ≤ 0.05 and max|ΔPSI| ≥ '
+    '0.1), splicing conserved (LeafCutter P > 0.1 and max|ΔPSI| ≤ 0.05, that is, positive evidence of a small '
+    'difference) and inconclusive.'),
+    ('4. Effect sizes independent of significance thresholds. We added distributions of |ΔPSI| and correlations of '
+    'PSI for the human-mouse, human-human and mouse-mouse dataset pairs on the same events (new Figure 3), and '
+    'analyses with alternative ΔPSI thresholds.'),
+    ('5. Robustness of the orthology map. The analysis was updated to Ensembl release 116, an error in the exon '
+    'sequence extraction was corrected, and all analyses were repeated with 70% and 80% exon identity, with '
+    'reciprocal best matches only, and for events with identical human-mouse splice-site geometry.'),
+    ('6. Cell populations. We provide a sample-level metadata table (Table S2), and an event is classified as '
+    'differentially spliced only if every human dataset differs from every mouse dataset by more than 1.5 times the'
+    ' differences between the datasets of the same species, which differ in their cell populations.'),
+    ('7. Sex, age and tissue. We added comparisons within each species that differ only in sex, age or tissue of '
+    'origin (human and mouse). These caused far fewer and smaller splicing differences (0-6.2% of the events) than '
+    'the differences between datasets of the same species, and much smaller effect sizes than species '
+    '(Supplementary Note 1, Figure S7, Table S12).'),
+    ('8. Fibroblasts. As the immune and fibroblast datasets come from different studies, the interpretation is now '
+    'limited to differences relative to the fibroblast samples examined and to supportive evidence, and we report '
+    'that robust species differences are often shared with fibroblasts.'),
+    ('9. Moderated conclusions. The title was changed to "Limited conservation of alternative splicing use ratio '
+    'between human and mouse immune cells", the abstract was shortened and the denominators clarified, conclusions '
+    'are restricted to sufficiently expressed and testable events, speculative evolutionary and functional '
+    'statements were removed or marked as hypotheses, and the novelty of the approach is positioned relative to '
+    'previous work.'),
+    ('With these changes, the results are stated more cautiously. Of the 2,509-2,972 events testable in each cell '
+    'type, 5.7-7.8% are splicing conserved, mostly events dominated by one isoform; 5.2-7.8% (526 events in at '
+    'least one cell type) differ between species by at least 0.1 and more than every difference between datasets of'
+    ' the same species; and for the other 85-89%, the differences between datasets of the same species are too '
+    'large to conclude. Among the events in which both isoforms are used, differential splicing was found about 50 '
+    'times as often as splicing conservation (11.4% vs 0.2%). A point-by-point response follows. Changes are marked'
+    ' in the tracked-changes version of the manuscript.'),
+    ('Sincerely,'),
+    ('Hadas Ner-Gaon, Naama Nudelman and Tal Shay'),
+]
+
+CONTROLS = 'male vs female (human: five cell types, GSE107011; mouse: B cells, ENCODE), young vs old (human and mouse naive CD4 T cells, GSE143213 and GSE184496) and two tissues (human NK cells from blood and spleen of the same donors, GSE133383; mouse NK cells from spleen and liver, GSE233347; mouse monocytes from bone marrow and blood, GSE116177, and from blood and spleen, PRJNA797236)'
+
+R1 = [
+    ('We thank the reviewer for this important point. We agree that a comparison of public human and mouse datasets '
+    'cannot completely isolate a species effect, as tissue source, age and other factors are aligned with species '
+    'in such data; this limitation is now stated explicitly in the Discussion. To reduce confounding as much as '
+    'possible with public data, we made the following changes. (a) Each cell type is now compared between three '
+    'human and three mouse datasets that differ in laboratory, protocol, tissue source and mouse strain (Methods '
+    '2.2, Figure 1B, Table S2), and an event is classified as differentially spliced between species only if every '
+    'human dataset differs from every mouse dataset by more than 1.5 times every difference between datasets of the'
+    ' same species, with a difference of at least 0.1 between the mean human and mouse PSI (Methods 2.5, Table 1), '
+    'so that a difference is not attributable to a single pair of datasets. (b) We provide a sample-level metadata '
+    'table (Table S2) with the tissue source, sorting markers, cell state, treatment, age, sex and strain of every '
+    'sample. (c) The mouse datasets themselves come from spleen, lymph nodes, bone marrow and blood, so the within-'
+    'mouse differences include tissue differences; the human-mouse differences are larger than the differences '
+    'between datasets of the same species (Figure 3). We agree that factors that are aligned with species in all '
+    'datasets, such as housing conditions or age, cannot be excluded, and we discuss them as limitations. (d) Most '
+    'importantly, we directly tested whether sex, age or tissue of origin can cause splicing differences of the '
+    'observed magnitude, using comparisons within each species that differ only in one of these factors, with the '
+    'same cell type, laboratory and protocol: male vs female (human: five cell types, GSE107011; mouse: B cells, '
+    'ENCODE), young vs old (human and mouse naive CD4 T cells, GSE143213 and GSE184496) and two tissues (human NK '
+    'cells from blood and spleen of the same donors, GSE133383; mouse NK cells from spleen and liver, GSE233347; '
+    'mouse monocytes from bone marrow and blood, GSE116177, and from blood and spleen, PRJNA797236). On the same '
+    'events, only 0-0.15%, 0-1.2% and 0-6.2% of the events were differentially spliced by sex, age and tissue, '
+    'respectively; the effect sizes were much smaller than between human and mouse (median max(|ΔPSI|) 0.015-0.045 '
+    'vs 0.087-0.118, and 0.052-0.089 between datasets of the same species; means over dataset pairs) and the PSI '
+    'correlations higher (0.98-0.996 vs 0.85-0.90), and the human-mouse differences were larger than those of every'
+    ' control comparison (paired Wilcoxon test, P < 10^-200; Supplementary Note 1, Figure S7, Table S12). These '
+    'factors therefore cannot account for the human-mouse differences.'),
+    ('We agree. (a) Each cell type is now compared between three human and three mouse datasets, and every dataset '
+    'has at least three replicates of the cell type (3-6 in the mouse datasets; Table S4). As no mouse dataset '
+    'profiles all five cell types with at least three replicates, the three mouse datasets were assembled per cell '
+    'type from independent studies (Methods 2.2). The mouse dataset of the submitted version (GSE116177) has only '
+    'two replicates per cell type and is no longer used for the human-mouse comparison, and GSE180020 was removed, '
+    'as its short reads (2x38 nucleotides) left many junctions uncovered; the mouse datasets now have reads of '
+    '76-151 nucleotides. (b) Human-mouse differences are no longer derived from a single pair of datasets. Each '
+    'event is classified from all six datasets: it is differentially spliced if the ANOVA over the six datasets is '
+    'significant (Benjamini-Hochberg adjusted P ≤ 0.05) and, in at least one junction, the mean human and the mean '
+    'mouse dataset PSI differ by at least 0.1 and every one of the nine human-mouse dataset differences is more '
+    'than 1.5 times every one of the six differences between datasets of the same species. Applying the same '
+    'classification to the nine splits of the six datasets that mix the species gave 2.9-4.9 events per cell type '
+    'on average (1.5-3.6% of the number for the human-mouse split; Table S6). (c) We no longer classify '
+    'nonsignificant events as "unchanged": an event is splicing conserved between species only if the ANOVA over '
+    'the six datasets is not significant (P > 0.1) and its PSI varies by at most 0.05 across all six datasets, and '
+    'in single comparisons only if the LeafCutter P value is above 0.1 and max|ΔPSI| is at most 0.05, so that '
+    'groups with few replicates, with a large but not significant difference, are classified as inconclusive '
+    '(Methods 2.4-2.5). (d) With these criteria, of the 2,509-2,972 events testable in each cell type, 5.2-7.8% are'
+    ' differentially spliced and 5.7-7.8% splicing conserved, and the other 85-89% are inconclusive (Table 1). The '
+    '62-67% rate of the submitted version came from a single pair of datasets and is no longer reported as the '
+    'species difference; the single human-mouse pairs (43-50% differentially spliced, mean over nine pairs) are '
+    'compared with the within-species pairs (human 25-31%, mouse 18-38%) only as a step before the classification '
+    '(Figure 2A-C).'),
+    ('We revised the statistical framework as described above (one-way ANOVA between the datasets with Benjamini-'
+    'Hochberg correction, a minimal human-mouse difference and the requirement relative to the within-species '
+    'differences, verified on the splits that mix the species; explicit criteria for splicing conservation; effect-'
+    'size analyses) and expanded the Methods. All analysis scripts, including the exact versions of the annotation '
+    '(Ensembl release 116, pinned to the release-116 files) and of the software, are available in the GitHub '
+    'repository, and all intermediate results are provided in the Supplementary Tables.'),
+]
+
+R2 = [
+    ('We thank the reviewer for this suggestion, which we implemented. In the new Figure 3, we compare the '
+    'distributions of max(|ΔPSI|) between human-mouse, human-human and mouse-mouse comparisons on the same events '
+    '(the 2,329-2,887 events per cell type that are testable in all 15 dataset pairs). In every cell type, human-'
+    'mouse differences are larger than within-species differences (paired Wilcoxon test, P < 10^-216; Figure 3A, in'
+    ' which each of the 15 comparisons is shown separately), and the PSI correlations are lower between species (r '
+    '= 0.80-0.92 vs 0.90-0.99; Figure 3B). Dataset variability is now estimated from three human-human and three '
+    'mouse-mouse pairs per cell type (Figure S1A), and the classification of each event uses it directly: an event '
+    'is differentially spliced only if every human-mouse dataset difference is more than 1.5 times every within-'
+    'species dataset difference (with a difference of at least 0.1 between the mean human and mouse PSI). We also '
+    'added control comparisons within each species that differ only in sex, age or tissue of origin, which showed '
+    'far smaller differences than species (0-6.2% of the events differentially spliced, and much smaller effect '
+    'sizes; Supplementary Note 1, Figure S7, Table S12), and we discuss the remaining confounders (sequencing '
+    'depth, library preparation, tissue source, age, sex, genetic background) in the Discussion.'),
+    ('We agree that this needed clarification. In the revised manuscript, the primary evidence for species '
+    'divergence is the classification of each event from all six datasets of each cell type (Methods 2.5, Figure '
+    '1B): it is differentially spliced if the ANOVA over the six datasets is significant (Benjamini-Hochberg '
+    'adjusted P ≤ 0.05) and, in at least one junction, the mean human and the mean mouse dataset PSI differ by at '
+    'least 0.1 and every one of the nine human-mouse dataset differences is more than 1.5 times every one of the '
+    'six differences between datasets of the same species. Of the 2,509-2,972 events testable in each cell type, '
+    '136-232 (5.2-7.8%) are differentially spliced (526 events in at least one cell type; Results 3.2, Table 1, '
+    'Tables S9, S10). For these events, the largest difference between datasets of the same species is much smaller'
+    ' than the smallest human-mouse difference (median 0.08-0.10 vs 0.21-0.26). A difference between the mean human'
+    ' and mean mouse PSI alone also reflects dataset differences; we therefore applied the same classification to '
+    'the nine splits of the six datasets into two groups of three that mix the species: a difference of at least '
+    '0.1 between the group means alone was found for 55-65% as many events as for the human-mouse split, but with '
+    'the requirement that every between-group difference exceeds 1.5 times every within-group difference, for only '
+    '1.5-3.6% as many (2.9-4.9 events per cell type on average; Table S6). We state in the Methods and the '
+    'limitations that this requirement is a threshold rather than a statistical test of the dataset effect. The '
+    'single human-mouse pairs (Figure 2C) and the threshold-free effect sizes (Figure 3) are presented as '
+    'supporting evidence. The title was moderated ("Limited conservation of alternative splicing use ratio between '
+    'human and mouse immune cells"), and the abstract reports only the classification across all six datasets, '
+    'including the large fraction of inconclusive events (85-89%).'),
+    ('We fully agree. We now require positive evidence of a similar use ratio, which we term splicing conserved. In '
+    'single comparisons of two groups of samples, an event is splicing conserved only if the difference is both '
+    'small and not significant at a lenient threshold (max|ΔPSI| ≤ 0.05, half the threshold for differential '
+    'splicing, and LeafCutter P > 0.1); events that are neither differentially spliced nor splicing conserved are '
+    'inconclusive (Methods 2.4-2.5, Figure S1C). Within species, splicing conservation could be demonstrated on '
+    'average for only 18-33% of the events. Between species, an event is splicing conserved only if the use ratio '
+    'is similar in all datasets of both species: the ANOVA over the three human and three mouse datasets is not '
+    'significant (P > 0.1) and the PSI of every junction varies by at most 0.05 across all six datasets (5.7-7.8% '
+    'of the testable events per cell type). Events that are neither differentially spliced nor splicing conserved '
+    'are reported as inconclusive (85-89%). Splicing conservation is found mostly for events dominated by one '
+    'isoform: in 99% of the splicing conserved classifications the minor isoform accounts for <5% of the reads, '
+    'whereas only 0.2% of the classifications with a minor isoform of at least 5% are splicing conserved (11.4% are'
+    ' differentially spliced; Figure 3C). We revised Results 3.4 and the Discussion accordingly.'),
+    ('We repeated the entire analysis, from the orthology map to the classification, with orthologous exons defined '
+    'by at least 70% or 80% identity, and by reciprocal best matches only (Tables S1, S6). The principal '
+    'conclusions are unchanged: 486, 384 and 532 events are differentially spliced in at least one cell type, '
+    'compared with 526 at 50% identity, and 5.1-7.8%, 4.8-7.4% and 5.3-7.9% of the testable events per cell type, '
+    'compared with 5.2-7.8%. Synteny is incorporated through the use of high confidence one-to-one orthologous '
+    'genes only (Ensembl orthology confidence, which includes gene order conservation and whole genome alignment), '
+    'junctions are defined only between orthologous exon boundaries, and we added a test of splice-site '
+    'correspondence: in 4,504 events the distance between the alternative splice sites, or the length of the '
+    'skipped exon, is identical in human and mouse, and the results in this subset are similar (4.4-6.4% '
+    'differentially spliced; Table S6). Exon order is also supported by the data: a junction is analyzed only if '
+    'both of its exons are orthologous and the junction connecting them is observed in both species. Although exon '
+    'rank is not used to define orthology, 86% of the orthologous exon boundaries used by the events have the same '
+    'exon rank in human and mouse, and 97% have a constant rank offset within the gene (Table S1). While updating '
+    'the pipeline to Ensembl 116 we also found and corrected an error in the extraction of exon sequences (line '
+    'breaks of the sequence files were included in some aligned sequences, and exons with untranslated regions on '
+    'both sides were trimmed on one side only).'),
+    ('We agree and revised this section (Results 3.5, Discussion). Of the 6,784 events, 5,671 (84%) are testable in '
+    'fibroblasts. The fibroblasts are compared with the differentially spliced and splicing conserved events of '
+    'each immune cell type, which are defined across all six datasets: 50-62% of the differentially spliced events '
+    'are differentially spliced also in fibroblasts, whereas only 0-3% of the splicing conserved events are '
+    'differentially spliced in fibroblasts (31-33% are splicing conserved and most others inconclusive in the '
+    'single fibroblast comparison; Figure 6A, B). Overall, 48% of the events differentially spliced in at least one'
+    ' immune cell type are differentially spliced also in fibroblasts, and 38 of the 47 events differentially '
+    'spliced in four or five immune cell types. We therefore no longer claim that most differences are immune-'
+    'specific; instead we conclude that robust differences are often shared between cell types, while others may '
+    'reflect immune-specific regulation, and we describe the fibroblast results as supportive rather than '
+    'definitive evidence, noting the single dataset per species, the different studies and protocols, and the '
+    'cultured state of the fibroblasts. The section title was changed to "Comparison of human-mouse splicing '
+    'differences in immune cells and fibroblasts".'),
+    ('Thank you; these analyses are now in the new Figure 3: cumulative distributions of max(|ΔPSI|) for every '
+    'dataset pair (Figure 3A), PSI correlations for every dataset pair and cell type (Figure 3B; human-mouse r = '
+    '0.80-0.92 vs 0.90-0.99 within species on the same events) and PSI density plots (Figure 3D). The values for '
+    'all comparisons are in Tables S6 and S8.'),
+    ('We agree and revised the abstract and Discussion to refer explicitly to sufficiently expressed and testable '
+    'orthologous alternative splicing events (6,784 events, 4,069 of them testable in all three human and all three'
+    ' mouse datasets in at least one cell type).'),
+    ('The abstract was rewritten and shortened, and each number is reported once.'),
+    ('We defined the terms in the Methods (2.3-2.4) and used them consistently in the revised sections: an '
+    'alternative splicing event is a LeafCutter cluster of junctions; PSI is the fraction of the junction reads of '
+    'an event that support a junction; and the use ratio of an event is described by the PSI of its junctions.'),
+    ('The rationale is now given in Methods 2.5: a ΔPSI of 0.1 is commonly used for splicing differences. Between '
+    'species, the minimal difference of 0.1 between the mean human and mouse PSI is combined with a threshold '
+    'relative to the dataset differences (every human-mouse dataset difference more than 1.5 times every within-'
+    'species difference), and splicing conserved events must vary by at most 0.05 across all six datasets. In '
+    'single comparisons, a splicing conserved event must differ by at most half of the differential splicing '
+    'threshold (0.05), so that an event cannot be both. Within species, we repeated the analysis with ΔPSI '
+    'thresholds of 0.05 and 0.2 (Table S6).'),
+    ('Only 52 genes contain both a differentially spliced and a splicing conserved event, so pooling events per gene'
+    ' has little effect on the gene lists; this is now stated in Results 3.4, and the classification of every event'
+    ' is provided in Table S10.'),
+    ('We agree that expression level affects which events can be classified: an event is testable only if its '
+    'junctions are covered by enough reads, and we now restrict the conclusions to sufficiently expressed and '
+    'testable events (Abstract, Discussion). In addition, splicing conserved events are almost all dominated by one'
+    ' isoform (the minor isoform accounts for <5% of the reads in 99% of the splicing conserved classifications), '
+    'for which a similar use ratio is easier to demonstrate, and we state this explicitly as a reason for caution '
+    'in interpreting the enrichment of translation-related genes among the splicing conserved events (Results 3.4, '
+    'Discussion).'),
+    ('We corrected the typographical errors and formatting artifacts that we identified (for example '
+    '"PairwieseAligner", "than" for "then", "differntially" in the figure legends, and the split percentages in '
+    'Table 1), and rewrote the figure legends.'),
+]
+
+R4 = [
+    ('We agree and implemented this distinction. In single comparisons of two groups of samples (within species, '
+    'fibroblasts and controls), events are differentially spliced (evidence of differential usage: LeafCutter '
+    'adjusted P ≤ 0.05 and max|ΔPSI| ≥ 0.1), splicing conserved (evidence of similar usage: LeafCutter P > 0.1 and '
+    'max|ΔPSI| ≤ 0.05) or inconclusive (Methods 2.4-2.5, Figure S1C). Between species, each event in each immune '
+    'cell type is classified from all three human and three mouse datasets: splicing conserved if the ANOVA over '
+    'the six datasets is not significant (P > 0.1) and the PSI of every junction varies by at most 0.05 across '
+    'them; differentially spliced if the ANOVA is significant and, in at least one junction, the mean human and '
+    'mouse PSI differ by at least 0.1 and every human-mouse dataset difference is more than 1.5 times every within-'
+    'species difference; and inconclusive otherwise. All downstream analyses were repeated with the revised '
+    'classification: the class frequencies (Figure 2, Table 1, Table S9), the cell type sharing (Figure 2E-G), the '
+    'enrichment (Table S11) and the fibroblast comparison (Figure 6). Splicing conservation was shown mostly for '
+    'events dominated by one isoform (the minor isoform accounts for <5% of the reads in 99% of the splicing '
+    'conserved classifications; Figure 3C, Results 3.4).'),
+    ('Thank you. Table S2 now lists every sample with its accessions, biological source, sorting markers, cell '
+    'state, treatment condition, donor or mouse identity, sex, age, strain, library type, read length and mapping '
+    'statistics. As noted by the reviewer, not all populations are naive. In the revised design the mouse datasets '
+    'were chosen per cell type from sorted or purified cells of unmanipulated or control mice, mostly naive T '
+    'cells, follicular B cells, spleen NK cells and Ly6C-high monocytes, and the mouse groups of the submitted '
+    'version that included memory and effector T cells and inflammatory monocytes are no longer used for the human-'
+    'mouse comparison. The datasets of each species still differ in their cell populations (for example total CD4 '
+    'and CD8 T cells in H1 and H2 and naive T cells in H3; bone marrow, spleen and blood monocytes in M1, M2 and '
+    'M3), and an event is classified as differentially spliced between species only if every human dataset differs '
+    'from every mouse dataset by more than 1.5 times the differences between the datasets of the same species. '
+    'Thus, a difference in cell population within one species cannot by itself make an event differentially spliced'
+    ' between species. In addition, comparisons within each species that differ only in sex, age or tissue of '
+    'origin (for example NK cells from blood and spleen of the same human donors) showed far fewer and smaller '
+    'differences than species (Supplementary Note 1, Figure S7, Table S12).'),
+    ('We clarified the definition (at least 50% of each of the two exons aligned to identical nucleotides) and its '
+    'relation to ExOrthist: our nucleotide criterion is less strict than ExOrthist, which aligns exons at the '
+    'protein level and requires conserved intron positions and neighboring exons; in our framework, the exon '
+    'context is instead required through the RNA-seq data, as a junction is analyzed only if its two orthologous '
+    'exons are sequential in at least one expressed transcript of both species (Methods 2.1). Consistent with this,'
+    ' 86% of the orthologous exon boundaries used by the events have the same exon rank in human and mouse, and 97%'
+    ' a constant rank offset within the gene (Table S1). In addition, a human and a mouse exon boundary are now '
+    'paired only if each is the best-scoring candidate of the other (Methods 2.1). We also repeated all analyses '
+    'with 70% and 80% identity and with reciprocal best matches only, which removes ambiguous many-to-one '
+    'assignments (Table S1). The results are stable (486, 384 and 532 differentially spliced events vs 526; Table '
+    'S6). We also evaluated the principal findings in the 4,504 events with well-supported splice-site '
+    'correspondence, in which the distance between the alternative splice sites or the skipped exon length is '
+    'identical in human and mouse: 4.4-6.4% of the testable events in this subset are differentially spliced '
+    'between species, similar to 5.2-7.8% of all events (Table S6). The orthologous mouse coordinates of every '
+    'junction are provided in Table S7.'),
+    ('We agree, and we considered both analyses, but the design does not permit them: the immune and fibroblast '
+    'datasets were generated in different studies, with different library preparations and from sorted vs cultured '
+    'cells, so that a difference between the human-mouse effect sizes in immune cells and in fibroblasts, or a '
+    'species-by-cell-type interaction, cannot be attributed to the cell type. We therefore report, for the same '
+    'events, the status in fibroblasts of the events classified in each immune cell type and vice versa (Results '
+    '3.5, Figure 6). Events that are differentially spliced in immune cells are often differentially spliced also '
+    'in fibroblasts (48%). We therefore restricted the interpretation to differences relative to the fibroblast '
+    'samples examined, and removed the claim that most differences are immune-specific.'),
+    ('We removed the discussion of cancer-related evolutionary selection, and the statements on selection for an '
+    'isoform ratio and on effects on protein function are now presented as hypotheses that remain to be tested '
+    '(Discussion). We also no longer state that cell type dependence excludes cis-regulatory differences; instead, '
+    'we discuss that robust differences shared with fibroblasts may reflect cis-regulatory or splicing code '
+    'changes. Regarding validation, the requirement that every human dataset differ from every mouse dataset by '
+    'more than 1.5 times the differences between datasets of the same species, in datasets generated by different '
+    'laboratories and protocols, provides independent replication of each differentially spliced event in the RNA-'
+    'seq data, and the same requirement was met by very few events when the datasets were split into groups that '
+    'mix the species (Table S6); experimental validation of individual events is beyond the scope of this '
+    'computational study, and we state this limitation.'),
+    ('We revised the last paragraph of the Introduction: exon-level orthology, annotation-free local splicing '
+    'quantification and cross-species splicing comparisons have precedents, and our contribution is their '
+    'integration into an exon-boundary orthology map that converts mouse junctions to human coordinates, so that '
+    'the same event is tested directly in both species, together with its application to sorted immune cell '
+    'populations profiled in three independent datasets per species, which we provide as a resource (Tables S7, '
+    'S10).'),
+    ('The abstract was rewritten with explicit denominators: 6,784 orthologous events in total, and per cell type '
+    'the number of events testable in all six datasets and the percentage of them that are splicing conserved, '
+    'differentially spliced or inconclusive (Table 1). The submission abstract was replaced by the revised '
+    'manuscript abstract, without duplicated text.'),
+    ('Thank you. The fibroblast results (now Figure 6) are reported with the correct conditional denominators: for '
+    'each panel, the number of events testable in both the immune cell type and fibroblasts is stated in the text '
+    'and above each bar.'),
+    ('We corrected the figure references and panel labels; the gene figures now have a single panel B (counts and '
+    'PSI), described accordingly in the legends. Table 1 now has separate blocks for the human-mouse classification'
+    ' across all six datasets and for the human-human and mouse-mouse dataset pairs, and the footnotes state that '
+    'the thresholds refer to Benjamini-Hochberg adjusted P values.'),
+]
+
+RESPONSES = [(rev, [(c, r) for (c, _), r in zip(items, {"Reviewer 1": R1, "Reviewer 2": R2, "Reviewer 4": R4}[rev])])
+             for rev, items in [
+    ('Reviewer 1', [
+        ('The major concerns are (1) potential confounding effects and (2) limited sample size. ... 1. Species '
+         'differences are confounded with tissue source and other biological variables. The human-mouse '
+         'comparisons do not isolate a species effect. ... human cells are mainly derived from peripheral blood, '
+         'whereas mouse cells include spleen or other tissues. ... A tissue-source or age effect that is '
+         'consistently aligned with species would remain classified as a high-confidence species difference.',
+         'We thank the reviewer for this important point. We agree that a comparison of public human and mouse '
+         'datasets cannot completely isolate a species effect, as tissue source, age and other factors are '
+         'aligned with species in such data; this limitation is now stated explicitly in the Discussion. To '
+         'reduce confounding as much as possible with public data, we made the following changes. (a) We added '
+         'datasets and now compare three human and two mouse datasets that differ in laboratory, protocol, tissue '
+         'source and mouse strain (Methods 2.2, Figure 1B, Table S2), and an event is classified as differentially '
+         'spliced between species only if the PSI of every human dataset differs from that of every mouse dataset '
+         '(Table 1), so that a difference is not attributable to a single pair of datasets. '
+         '(b) We provide a sample-level metadata table (Table S2) with the tissue source, sorting markers, cell '
+         'state, treatment, age, sex and strain of every sample. (c) The mouse datasets themselves span spleen, lymph '
+         'nodes, bone marrow and peritoneal cavity, and the within-mouse comparison, which includes these tissue '
+         'differences, shows differential splicing in only 14-27% of the events, and the human-mouse differences are '
+         'larger (Figure 3). We '
+         'agree that factors that are aligned with species in all datasets, such as housing conditions or age, '
+         'cannot be excluded, and we now discuss them as limitations (Discussion, limitations paragraph). (e) Most '
+         'importantly, we directly tested whether sex, age or tissue of origin can cause splicing differences of '
+         'the observed magnitude, using comparisons within each species that differ only in one of these factors, '
+         'with the same cell type, laboratory and protocol: male vs female (human: five cell types, GSE107011; '
+         'mouse: B cells, ENCODE), young vs old (human and mouse naive CD4 T cells, GSE143213 and GSE184496) and '
+         'two tissues (human NK cells from blood and spleen of the same donors, GSE133383; mouse NK cells from '
+         'spleen and liver, GSE233347; mouse monocytes from bone marrow and blood, GSE116177, and from blood and spleen, '
+         'PRJNA797236). On the same events, '
+         'only 0-0.1%, 0-2.3% and 0-6.6% of the events were differentially spliced by sex, age and tissue, '
+         'respectively, compared with 14-34% between datasets of the same species; the effect sizes were also much '
+         'smaller than between human and mouse '
+         '(median max(|ΔPSI|) 0.016-0.044 vs 0.097-0.135) and the PSI correlations higher (0.98-0.995 vs '
+         '0.79-0.87), and the human-mouse differences were larger than those of every control comparison (paired '
+         'Wilcoxon test, P < 0.001; Supplementary Results, Figure S7, Table S13). These factors therefore cannot '
+         'account for the human-mouse differences.'),
+        ('2. Insufficient dataset-level and biological replication. The central human-mouse comparison includes '
+         'only one dataset per species ... several groups contain only two biological replicates ... the reported '
+         '62-67% differential-splicing rate and the classification of nonsignificant events as "splicing '
+         'unchanged" cannot be considered robust or generalized without validation using additional independent '
+         'datasets and biological replicates.',
+         'We agree. (a) The central comparison now includes three human and two mouse datasets (six human-mouse '
+         'pairs), and the main results are reported as the median and range over these pairs (Table 1). The '
+         'second mouse dataset of the original submission (GSE180020) was replaced, as its short reads (2x38 '
+         'nucleotides) left many junctions uncovered; the new datasets have reads of 75-150 nucleotides and 2-4 '
+         'replicates per cell type. (b) An event is now classified as differentially spliced between species only '
+         'if, for at least one junction, the PSI of every human dataset differs from the PSI of every mouse '
+         'dataset (by at least 0.1; high confidence, at least 0.2), so that each difference is replicated in all '
+         'three human and both mouse datasets and is larger than any difference between datasets of the same '
+         'species. Applying the same rule to the nine other splits of the five datasets into groups of three and '
+         'two, which mix the species, estimates that 5-7% of the high-confidence and 13-18% of all differentially '
+         'spliced events are expected from dataset differences alone (Methods 2.5, Table 1). (c) '
+         'We no longer '
+         'classify nonsignificant events as "unchanged": we test for equivalence (90% confidence interval of '
+         'ΔPSI within ±0.1, equivalent to two one-sided tests), so that groups with few replicates, which have '
+         'wide confidence intervals, are classified as inconclusive rather than unchanged (Methods 2.4-2.5). '
+         'Between species, an event is classified as equivalent only if its PSI is similar in all five datasets, '
+         'which was shown for 13-17% of the testable events, and the conclusions about conservation were revised '
+         'accordingly (Results 3.4). (d) With the classification across all five datasets, 20-23% of the testable '
+         'events in each cell type are differentially spliced between species (9-11% with high confidence), '
+         'compared with a median of 14-34% differentially spliced between datasets of the same species.'),
+        ('Statistical methods (No) and documentation for replication (No).',
+         'We revised the statistical framework as described above (equivalence testing, replication across '
+         'dataset pairs, effect-size analyses, coverage models) and expanded the Methods. All analysis scripts, '
+         'including the exact versions of the annotation (Ensembl release 116, pinned to the release-116 files) '
+         'and of the software, are available in the GitHub repository, and all intermediate results are provided '
+         'in the Supplementary Tables (S5-S13).'),
+    ]),
+    ('Reviewer 2', [
+        ('1. Species effects are strongly confounded with dataset and sample-source effects. ... The authors '
+         'should more quantitatively separate the species effect from within-species dataset variability. For '
+         'example, distributions of absolute ΔPSI values in human-mouse, human-human, and mouse-mouse comparisons '
+         'should be directly compared, rather than relying mainly on the proportion of events passing '
+         'significance thresholds.',
+         'We thank the reviewer for this suggestion, which we implemented. In the new Figure 3, we compare the '
+         'distributions of max(|ΔPSI|) between human-mouse, human-human and mouse-mouse comparisons on the same '
+         'events (the 1,752-1,982 events per cell type that are testable in all ten comparisons). In every cell '
+         'type, human-mouse differences are larger than within-species differences (paired Wilcoxon test, '
+         'P < 10^-94; Figure 3A, in which each of the ten comparisons is shown separately). Comparisons that include '
+         'the datasets with fewer replicates or Smart-seq2 libraries (H3 and M2) show larger differences also '
+         'within species. In addition, we added more datasets so that dataset variability is estimated from '
+         'three human-human pairs and one mouse-mouse pair (Figure S1A), and we added control comparisons within each species that differ only in sex, '
+         'age or tissue of origin, which showed far smaller differences than species (0-6.6% of the events '
+         'differentially spliced, and much smaller effect sizes; Supplementary Results, Figure S7, Table S13). We also discuss the remaining confounders (sequencing depth, library '
+         'preparation, tissue source, age, sex, genetic background) in the Discussion.'),
+        ('2. The headline conclusion based on 62-67% differential splicing is difficult to reconcile with the '
+         'high-confidence analysis. ... The manuscript should therefore clarify which analysis constitutes the '
+         'primary evidence supporting the biological conclusion. If low-confidence events are substantially '
+         'affected by technical or dataset variability, the title, abstract, and overall interpretation should be '
+         'moderated accordingly.',
+         'We agree that this needed clarification. In the revised manuscript, the primary evidence for species '
+         'divergence is the event classification, which uses all five datasets of each cell type: an event is '
+         'differentially spliced only if, for at least one junction, the PSI of every human dataset differs from '
+         'the PSI of every mouse dataset, by at least 0.2 for high confidence and 0.1 for low confidence (Methods '
+         '2.5, Figure 1C). Thus, the human-mouse difference of every differentially spliced event is larger than '
+         'any difference between datasets of the same species. Of the 2,487-2,685 events testable in each cell '
+         'type, 497-616 (20-23%) are differentially spliced, 226-289 (9-11%) with high confidence (1,307 and 626 '
+         'events in at least one cell type; Results 3.2, Table 1, Table S10). To estimate how many of these are '
+         'expected from dataset differences alone, we applied the same rule to the nine other ways of splitting '
+         'the five datasets into groups of three and two, which mix the species: the estimated FDR is 5-7% for the '
+         'high-confidence and 13-18% for all differentially spliced events (Table 1). We state explicitly that '
+         'this classification is a separation criterion with a permutation-based FDR rather than a per-event '
+         'statistical test: with three human and two mouse datasets there are only ten ways to split the datasets '
+         'into groups of three and two, so that no event can reach a permutation P value below 0.1, and the error '
+         'rate is estimated for the set of differentially spliced events as a whole (Methods 2.5); this is also '
+         'listed among the limitations of the study (Discussion). For the differentially '
+         'spliced events, the differences between datasets of the same species are much smaller than the '
+         'human-mouse differences (median max(|ΔPSI|) 0.06-0.13 vs 0.25-0.38; new Figure S3). The threshold-free '
+         'effect sizes (Figure 3) are presented as supporting evidence that the species difference exceeds dataset variability on the '
+         'whole set of testable events. We moderated the title ("Limited conservation of alternative splicing use '
+         'ratio between human and mouse immune cells"), and the abstract now reports only the '
+         'classification across all datasets (the fraction of the testable events that are differentially spliced, '
+         'with the estimated FDR, and equivalent; Table 1). Human-mouse events are classified only in this way; the '
+         'single-pair test is used only within species and for the fibroblasts, which have one dataset per species.'),
+        ('3. "Splicing unchanged" should not automatically be interpreted as evidence of conservation. ... The '
+         'authors should distinguish more clearly between "no evidence of differential splicing" and "evidence of '
+         'conserved splicing." An equivalence-based framework, confidence intervals for ΔPSI, or at minimum a more '
+         'cautious terminology would improve the statistical interpretation.',
+         'We fully agree and adopted an equivalence-based framework. For each event and comparison we estimate '
+         'the 90% confidence interval of the ΔPSI of every junction (Welch), and an event is equivalent only if all '
+         'intervals lie within ±0.1 (equivalent to two one-sided tests at α = 0.05). Events that are neither '
+         'differentially spliced nor equivalent are inconclusive (Methods 2.4-2.5, Figure S1C); within species, '
+         'equivalence could be demonstrated for a median of only 12-38% of the events. Between species, an event is classified as equivalent between species only if the PSI of every junction '
+         'varies by at most 0.1 (low confidence) or 0.05 (high confidence) across all three human and both mouse '
+         'datasets, so that the use ratio is shown to be similar in every dataset of both species (12.8-17.2% and '
+         '5.9-8.0% of the testable events per cell type). Equivalence is demonstrated mostly for events dominated '
+         'by one isoform: in 96% of the high-confidence equivalent classifications the minor isoform accounts for '
+         '<5% of the reads, whereas only 0.3% of the classifications with a minor isoform of at least 5% are '
+         'equivalent with high confidence (Figure 3C). We revised Results 3.4 and the Discussion accordingly, and we report results for '
+         'margins of ±0.025 and ±0.05 as well (Table S9, S6).'),
+        ('4. The definition of orthologous exons requires stronger validation and sensitivity analysis. ... The '
+         'authors should provide sensitivity analyses using more stringent thresholds, for example 70% or 80% '
+         'identity, and evaluate whether the principal conclusions remain stable. Incorporating additional '
+         'information such as conserved genomic order, synteny, exon rank, or reciprocal matching would also '
+         'strengthen the orthology definition.',
+         'We repeated the entire analysis, from the orthology map to the classification, with orthologous exons '
+         'defined by at least 70% or 80% identity, and by reciprocal best matches only (Table S1, S6). The '
+         'principal conclusions are unchanged: 567, 464 and 631 events are differentially spliced with high '
+         'confidence, compared with 626 at 50% identity. Synteny is incorporated through the use of high '
+         'confidence one-to-one orthologous genes only (Ensembl orthology confidence, which includes gene order '
+         'conservation and whole genome alignment), junctions are defined only between orthologous exon '
+         'boundaries, and we added a test of splice-site correspondence: in 3,056 events the '
+         'distance between the alternative splice sites, or the length of the skipped exon, is identical in human '
+         'and mouse, and the results in this subset are the same (Table S6). Exon order is also supported by the '
+         'data: a junction is analyzed only if both of its exons are orthologous and the junction connecting them is '
+         'observed in both species, that is, the two exons are sequential in at least one expressed transcript of '
+         'both human and mouse. Although exon rank is not used to define orthology, 85% of the orthologous exon '
+         'boundaries used by the events have the same exon rank in human and mouse, and 97% have a constant rank '
+         'offset within the gene (Table S1). While updating the pipeline to '
+         'Ensembl 116 we also found and corrected an error in the extraction of exon sequences (line breaks of '
+         'the sequence files were included in some aligned sequences, and exons with untranslated regions on both '
+         'sides were trimmed on one side only).'),
+        ('5. The fibroblast comparison does not fully establish immune-cell-specific divergence. ... I suggest '
+         'interpreting the fibroblast results as supportive evidence rather than definitive evidence for '
+         'immune-cell-specific divergence.',
+         'We agree and revised this section (Results 3.5, Discussion). With the revised analysis, 3,801 of the '
+         '4,570 events (83%) are testable in fibroblasts. The fibroblasts are compared with the differentially spliced '
+         'and equivalent events of each immune cell type, which are defined across all five datasets: 40-53% '
+         'of the differentially spliced events are differentially spliced also in fibroblasts, and 86-88% of the '
+         'equivalent events are equivalent in fibroblasts (Figure 6A, B). Differential splicing is less frequent '
+         'between human and mouse fibroblasts (28% of the testable events) than in the human-mouse comparisons of '
+         'immune cells, although, as the datasets come from different studies and protocols, this may reflect the '
+         'datasets as well as the cell type, but the events that are '
+         'differentially spliced with high confidence in immune cells are often differentially spliced also in '
+         'fibroblasts (54%). We therefore no longer claim that most differences are immune-specific; instead we '
+         'conclude that robust differences are often shared between cell types, while others may reflect '
+         'immune-specific regulation, and we describe the fibroblast results as supportive rather than definitive '
+         'evidence, noting the single dataset per species and the cultured state of the fibroblasts. The section '
+         'title was changed to "Comparison of human-mouse splicing differences in immune cells and fibroblasts".'),
+        ('6. Additional effect-size-based analyses would substantially strengthen the manuscript. ... the authors '
+         'could report correlations between human and mouse PSI values across orthologous events and compare these '
+         'with human-human and mouse-mouse correlations. Similarly, density plots, cumulative distributions, or '
+         'violin plots of |ΔPSI| would allow readers to assess the magnitude of cross-species divergence '
+         'independently of statistical significance.',
+         'Thank you; these analyses are now in the new Figure 3: cumulative distributions of max(|ΔPSI|) for every '
+         'dataset pair (Figure 3A), PSI correlations for every dataset pair and cell type (Figure 3B; human-mouse '
+         'r = 0.76-0.89 vs 0.88-0.97 within species on the same events) and PSI density plots (Figure 3D). The '
+         'values for all comparisons are in Tables S9 and S6.'),
+        ('7. The scope of the conclusions should reflect the limited number of testable events. ... The '
+         'conclusions should explicitly refer to sufficiently expressed and testable orthologous alternative '
+         'splicing events in the analyzed datasets.',
+         'We agree and revised the abstract and Discussion to refer explicitly to sufficiently expressed and '
+         'testable orthologous alternative splicing events (4,570 events, 3,508 of them testable in all three '
+         'human and both mouse datasets in at least one cell type). We also show that coverage affects testability and '
+         'classification (Table S7).'),
+        ('Minor 1. The abstract appears repetitive and should be shortened.',
+         'The abstract was rewritten and shortened, and each number is reported once.'),
+        ('Minor 2. The manuscript should consistently distinguish "alternative splicing event," "junction," '
+         '"PSI," and "splicing ratio."',
+         'We defined the terms in the Methods (2.3-2.4) and used them consistently in the revised sections: an '
+         'alternative splicing event is a LeafCutter cluster of junctions; PSI is the fraction of the junction '
+         'reads of an event that support a junction; and the use ratio of an event is described by the PSI of its '
+         'junctions.'),
+        ('Minor 3. The rationale for the selected ΔPSI thresholds should be explained and, ideally, supported by '
+         'sensitivity analyses using alternative effect-size cutoffs.',
+         'The rationale is now given in Methods 2.5. Between species, the classification uses two thresholds of the '
+         'human-mouse PSI difference, 0.1 (low confidence) and 0.2 (high confidence), with 20-23% and 9-11% of the '
+         'testable events differentially spliced, respectively (Table 1); within species, we repeated the analysis '
+         'with ΔPSI thresholds of 0.05 and 0.2 and equivalence margins of 0.025 and 0.05 (Table S6).'),
+        ('Minor 4. The functional enrichment analysis collapses event-level classifications to the gene level. ... '
+         'the implications of this simplification should be discussed.',
+         'Only 35 genes contain both a differentially spliced and an equivalent event with high confidence, so pooling '
+         'events per gene has little effect on the gene lists; this is now stated in Results 3.4, and the '
+         'event-level classification of every event is provided in Table S11.'),
+        ('Minor 5. The enrichment of conserved events in ribosomal and translation-related genes may partially '
+         'reflect expression and junction-coverage biases. The authors should consider whether gene expression '
+         'level, number of testable junctions, or number of alternative splicing events per gene influences the '
+         'probability of classification.',
+         'We tested this directly. In a logistic regression, higher event coverage increases the probability that '
+         'an event is testable and classified as equivalent, and decreases the probability that it is classified as '
+         'differentially spliced; events with more junctions are less likely to be classified as equivalent (Table S7). '
+         'Several RNA processing and respiration terms remained associated with equivalent events after '
+         'adjusting for coverage (for example rRNA processing, adjusted odds ratio 3.13, P = 0.004; ribonucleoprotein complex biogenesis, '
+         '1.93, P = 0.009; oxidative phosphorylation, 2.85, P = 0.001; Table S12). We also show that equivalent '
+         'events are mostly '
+         'events dominated by one isoform (the minor isoform accounts for <5% of the reads), and discuss that equivalence is easier to demonstrate for such events '
+         '(Results 3.4, Discussion).'),
+        ('Minor 6. Several grammatical and typographical issues remain throughout the manuscript ... formatting '
+         'artifacts in the reported percentages and several spelling errors in the figure legends.',
+         'We corrected the typographical errors and formatting artifacts that we identified (for example '
+         '"PairwieseAligner", "than" for "then", "differntially" in the figure legends, and the split '
+         'percentages in Table 1), and rewrote the figure legends.'),
+    ]),
+    ('Reviewer 4', [
+        ('1. Definition of "splicing unchanged". ... The authors should distinguish evidence of differential '
+         'usage, evidence of sufficiently similar usage, and inconclusive results, using an appropriately '
+         'justified equivalence criterion or uncertainty estimates. The reported conservation rates and downstream '
+         'analyses should then be reassessed using the revised classification.',
+         'We agree and implemented exactly this three-way classification: differentially spliced, equivalent '
+         '(90% confidence interval of ΔPSI within ±0.1 for every junction, equivalent to two one-sided tests; the '
+         'margin equals the ΔPSI threshold for differential splicing, and results for ±0.025 and ±0.05 are '
+         'reported) and inconclusive (Methods 2.4-2.5, Figure S1C), which we use within species and for the '
+         'fibroblasts. To classify each event in each immune cell type between species, we used the same three '
+         'categories across all five datasets: differentially spliced if the PSI of every '
+         'human dataset differs from that of every mouse dataset (by at least 0.2 for high confidence, 0.1 for low '
+         'confidence), equivalent if the PSI of every junction varies by at most 0.05 (high confidence) or 0.1 '
+         '(low confidence) across all datasets of both species, and inconclusive otherwise. All downstream analyses '
+         'were repeated with the revised classification: the differentially spliced and equivalent events and '
+         'their confidence levels (Figure 2, Table 1, Table S10), the cell type sharing (Figure 2E-G), the '
+         'enrichment (Table S12) and the fibroblast comparison (Figure 6). Equivalence was shown mostly for events '
+         'dominated by one isoform (the minor isoform accounts for <5% of the reads in 96% of the high-confidence '
+         'equivalent classifications; Figure 3C, Results 3.4).'),
+        ('2. Comparability of cell populations across datasets. ... Please provide a sample-level metadata table '
+         'specifying the actual samples included, their biological sources, sorting criteria, cell states, '
+         'treatment conditions, and biological replicate identities. Analyses restricted to the most closely '
+         'matched populations would help determine whether the principal findings persist after reducing these '
+         'sources of confounding.',
+         'Thank you. Table S2 now lists every sample with its accessions, biological source, sorting markers, '
+         'cell state, treatment condition, donor or mouse identity, sex, age, strain, library type, read length '
+         'and mapping statistics. As noted by the reviewer, not all populations are naive: the human CD4 and CD8 T '
+         'cells of H1 and H2 are total populations, and the M1 groups include memory and effector T cells and '
+         'inflammatory and bone marrow monocytes. We corrected the description in the Methods. Rather than '
+         'restricting the analysis to the most closely matched populations, which would leave two M1 samples per '
+         'cell type, the datasets of each species now differ in their cell populations (total CD4 and CD8 T cells in '
+         'H1 and H2 and naive T cells in H3; naive and memory or effector T cells and blood, bone marrow and '
+         'inflammatory monocytes in M1, and naive CD4 T cells and bone marrow monocytes in M2), and an event is '
+         'classified as differentially spliced between species only if every human dataset differs from every '
+         'mouse dataset (Table 1). Thus, a difference in cell population within one species cannot by itself make '
+         'an event differentially spliced between species. In addition, comparisons within each species that differ only in sex, age or tissue of origin (for example '
+         'NK cells from blood and spleen of the same human donors) showed far fewer and smaller differences than '
+         'species (Supplementary Results, Figure S7, Table S13).'),
+        ('3. Validation of exon and splice-junction orthology assignments. ... Please justify the 50% nucleotide '
+         'identity threshold and clarify how it relates to the criteria used in the cited orthology methods. '
+         'Benchmarking against independently supported mappings, reporting ambiguous assignments, and testing '
+         'alternative thresholds would strengthen confidence in the analysis. The principal findings should also '
+         'be evaluated in a subset of events with particularly well-supported splice-site correspondence.',
+         'We clarified the definition (at least 50% of each of the two exons aligned to identical nucleotides) '
+         'and its relation to ExOrthist: our nucleotide criterion is less strict than ExOrthist, which aligns exons '
+         'at the protein level and requires conserved intron positions and neighboring exons; in our framework, the '
+         'exon context is instead required through the RNA-seq data, as a junction is analyzed only if its two '
+         'orthologous exons are sequential in at least one expressed transcript of both species (Methods 2.1). '
+         'Consistent with this, 85% of the orthologous exon boundaries used by the events have the same exon rank '
+         'in human and mouse, and 97% a constant rank offset within the gene (Table S1). In addition, a human and a mouse '
+         'exon boundary are now paired only if each is the best-scoring candidate of the other (Methods 2.1); this '
+         'prevents a mouse junction from being assigned to a non-orthologous human splice site when its best '
+         'human partner is already paired with another mouse boundary. We also repeated all analyses with 70% and 80% identity and with reciprocal best matches only, which removes '
+         'ambiguous many-to-one assignments (Table S1). The results are stable (567, 464 and 631 high confidence '
+         'differentially spliced events vs 626; Table S6). We also evaluated the principal findings in the 3,056 events with '
+         'well-supported splice-site correspondence, in which the distance between the alternative splice sites '
+         '(alternative 3\' or 5\' splice sites) or the skipped exon length is identical in human and mouse: 19-21% of '
+         'these events are differentially spliced between species (8-10% with high confidence), similar to 20-23% '
+         '(9-11%) of all events (Table S6). The orthologous mouse coordinates of every junction are provided in Tables S8 '
+         'and S6.'),
+        ('4. Evidence supporting immune specificity. ... statistical significance in one cell type but not another '
+         'does not demonstrate a significant difference between their species effects. The authors should compare '
+         'effect sizes for the same assessable events and, where the design permits, test species-by-cell-type '
+         'interactions. Otherwise, the interpretation should be restricted to differences observed relative to the '
+         'fibroblast samples examined.',
+         'We agree, and we considered both analyses, but the design does not permit them: the immune and fibroblast '
+         'datasets were generated in different studies, with different library preparations (total vs polyA RNA) '
+         'and from sorted vs cultured cells, so that a difference between the human-mouse effect sizes in immune '
+         'cells and in fibroblasts, or a species-by-cell-type interaction, cannot be attributed to the cell type. '
+         'We therefore report, for the same events, the status in fibroblasts of the events classified in each '
+         'immune cell type and vice versa (Results 3.5, Figure 6). At the same time, events that are differentially spliced with '
+         'high confidence are often differentially spliced also in fibroblasts. We therefore restricted the interpretation to '
+         'differences relative to the fibroblast samples examined, and removed the claim that most differences '
+         'are immune-specific.'),
+        ('5. Biological and evolutionary interpretations require stronger support. ... The discussion of '
+         'cancer-related evolutionary selection is particularly speculative and should be removed or clearly '
+         'identified as an untested hypothesis. Independent validation of representative splicing events would '
+         'strengthen the study, while functional or mechanistic claims should either receive appropriate '
+         'experimental support or be revised to reflect their exploratory nature.',
+         'We removed the discussion of cancer-related evolutionary selection, and the statements on selection for '
+         'an isoform ratio and on effects on protein function are now presented as hypotheses that remain to be '
+         'tested (Discussion). We also no longer state that cell type dependence excludes cis-regulatory '
+         'differences; instead, we discuss that robust differences shared with fibroblasts may reflect '
+         'cis-regulatory or splicing code changes. Regarding validation, the requirement that the PSI of every '
+         'human dataset differ from that of every mouse dataset, in datasets generated by different laboratories '
+         'and protocols, provides independent replication of each differentially spliced event in the RNA-seq '
+         'data, and the number of events expected from dataset differences alone is estimated (FDR 5-7% for the '
+         'high-confidence events); experimental validation of individual events is beyond the scope of this '
+         'computational study, and we state this limitation.'),
+        ('6. Positioning of the methodological novelty. ... The authors should specify which components of their '
+         'mapping strategy represent methodological advances and which constitute the integration or application '
+         'of existing approaches.',
+         'We revised the last paragraph of the Introduction: exon-level orthology, annotation-free local splicing '
+         'quantification and cross-species splicing comparisons have precedents, and our contribution is their '
+         'integration into an exon-boundary orthology map that converts mouse junctions to human coordinates, so '
+         'that the same event is tested directly in both species, together with its application to sorted immune '
+         'cell populations profiled in several independent datasets per species, which we provide as a resource '
+         '(Tables S8, S11).'),
+        ('Minor 1. Clarify the denominators in the abstract and main results ... Please also reconcile the "67%" '
+         'statement in the submission abstract with the "62-67%" range in the manuscript abstract and remove the '
+         'duplicated text in the submission abstract.',
+         'The abstract was rewritten with explicit denominators: 4,570 orthologous events in total, and per cell '
+         'type the number of events testable in all five datasets and the percentage of them that are differentially spliced or equivalent (Table 1). The submission abstract was '
+         'replaced by the revised manuscript abstract, without duplicated text.'),
+        ('Minor 2. Correct the denominator accompanying Figure 5C. The statement that 141-163 events constitute '
+         '81-85% of 269 events is numerically inconsistent.',
+         'Thank you. The fibroblast results (now Figure 6) are reported with the correct conditional denominators: '
+         'for each panel, the number of events testable in both the immune cell type and fibroblasts is stated '
+         'in the text and above each bar.'),
+        ('Minor 3. Correct figure references, panel labels, and statistical notation ... Table 1 should clearly '
+         'distinguish the human-human and mouse-mouse comparisons and specify whether the reported significance '
+         'threshold refers to adjusted P-values.',
+         'We corrected the figure references and panel labels; the gene figures now have a single panel B '
+         '(counts and PSI), described accordingly in the legends. Table 1 now has separate blocks for the '
+         'human-mouse classification across all five datasets, the single human-mouse, human-human and mouse-mouse '
+         'dataset pairs, and the caption states that p '
+         'is the Benjamini-Hochberg adjusted P value.'),
+    ]),
+]]
+
+
+def main():
+    doc = Document()
+    apply_style(doc)
+    doc.add_heading('Response to the reviewers – manuscript 1982351', level=1)
+    md = ['# Response to the reviewers – manuscript 1982351', '']
+    doc.add_heading('Letter to the editor', level=2)
+    md += ['## Letter to the editor', '']
+    for p in LETTER:
+        doc.add_paragraph(p)
+        md += [p, '']
+    for reviewer, items in RESPONSES:
+        doc.add_heading(reviewer, level=2)
+        md += [f'## {reviewer}', '']
+        for comment, response in items:
+            p = doc.add_paragraph()
+            r = p.add_run('Comment: ' + comment)
+            r.italic = True
+            r.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+            p = doc.add_paragraph()
+            p.add_run('Response: ').bold = True
+            p.add_run(response)
+            md += [f'*Comment: {comment}*', '', f'**Response:** {response}', '']
+    finalize(doc)
+    doc.save(OUT + '.docx')
+    open(OUT + '.md', 'w').write('\n'.join(md))
+    print('wrote', OUT + '.docx')
+
+
+if __name__ == '__main__':
+    main()
