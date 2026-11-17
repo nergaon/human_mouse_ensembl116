@@ -283,7 +283,7 @@ def main():
     note = ('Datasets of this study and candidate datasets from the searches for additional public RNA-seq datasets '
             'in GEO, SRA, BioProject, ENA and the ENCODE portal, one row per accession. Main analysis: the GEO and BioProject '
             'queries of Methods 2.2 (human datasets that profile several immune cell types; mouse datasets of the '
-            'individual cell types; series and projects published until 19 October 2026). Control analysis: search of '
+            'individual cell types; datasets published until 19 October 2026). Control analysis: search of '
             '19 October 2026. Main analysis: datasets of '
             'sorted or purified immune cells of the five cell types (B, CD4 T, CD8 T, NK cells, monocytes) from unstimulated '
             'cells of healthy donors or unmanipulated or control mice, with at least three biological replicates per '

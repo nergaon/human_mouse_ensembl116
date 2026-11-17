@@ -91,7 +91,6 @@ def main(only=None):
         sh = read('S6', 'small_shift_A3SS_A5SS')[['event_type', 'pct_DS_small', 'pct_DS_larger', 'fisher_p']]
         sc = read('S6', 'single_cell_type_DS')[['DS_in_one_cell_type', 'status_in_other_cell_types', 'percent']]
         sp = read('S6', 'species_vs_mixed_splits')
-        dc = read('S6', 'dPSI_cutoff_within_species')
         bst.write('Table_S6', 'Supplementary Table S6: Sensitivity analyses',
                   'orthology_cutoff: % differentially spliced (DS) per cell type and DS events in any cell type, for each '
                   'orthology definition. common_events: on the events testable in all 15 dataset pairs, median max|dPSI| '
@@ -100,11 +99,10 @@ def main(only=None):
                   'classification by minor-isoform usage. small_shift: % DS for alternative splice sites up to 6 nt apart '
                   'vs more distant. single_cell_type_DS: status in the other cell types of events DS in one cell type. '
                   'species_vs_mixed_splits: the classification applied to every split of the six datasets into two groups '
-                  'of three; the human-mouse split vs the nine splits that mix the species. dPSI_cutoff: % differentially spliced in '
-                  'single dataset pairs with max|dPSI| thresholds 0.05, 0.1 and 0.2.',
+                  'of three; the human-mouse split vs the nine splits that mix the species.',
                   {'orthology_cutoff': orth, 'common_events': ce, 'common_events_tests': cet, 'splice_site': ss,
                    'minor_isoform': mu, 'small_shift': sh, 'single_cell_type_DS': sc,
-                   'species_vs_mixed_splits': sp, 'dPSI_cutoff': dc})
+                   'species_vs_mixed_splits': sp})
 
     def s7():
         # S7: odds ratios and P values

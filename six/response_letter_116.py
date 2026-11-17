@@ -134,7 +134,8 @@ R1 = [
     'differences, verified on the splits that mix the species; explicit criteria for splicing conservation; effect-'
     'size analyses) and expanded the Methods. All analysis scripts, including the exact versions of the annotation '
     '(Ensembl release 116, pinned to the release-116 files) and of the software, are available in the GitHub '
-    'repository, and all intermediate results are provided in the Supplementary Tables.'),
+    'repository (https://github.com/nergaon/human_mouse_ensembl116), and all intermediate results are provided in '
+    'the Supplementary Tables.'),
 ]
 
 R2 = [

@@ -157,12 +157,11 @@ UPDATES = {
         'with the two alternative splice sites on the same exon (an annotated exon of the human Ensembl 116 annotation '
         'contains both), alternative first or last exon (two or more junctions that share one splice site and whose '
         'alternative splice sites are on different exons, one of which is the first or the last exon of an annotated '
-        'transcript), or complex. The event type is used to describe the events (Results 3.1) and for two sensitivity '
-        'analyses: for alternative 3\' and 5\' splice site events, the correspondence between the human and mouse '
+        'transcript), or complex. The event type is used to describe the events (Results 3.1) and for a sensitivity '
+        'analysis: for alternative 3\' and 5\' splice site events, the correspondence between the human and mouse '
         'splice sites was considered well supported if the distance between the two alternative splice sites is '
         'identical in the two species (for example, two acceptors three nucleotides apart in both human and mouse); '
-        'for skipped exons, if the skipped exon has the same length in both species; and alternative 3\' and 5\' '
-        'splice sites up to six nucleotides apart were compared with more distant ones. Complex events and '
+        'for skipped exons, if the skipped exon has the same length in both species. Complex events and '
         'alternative first and last exons were not assessed for splice-site correspondence.',
 
     # ------------------------------------------------------------ methods 2.4 (LeafCutter, single pairs)

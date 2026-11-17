@@ -39,7 +39,7 @@ DATA_SHEETS = [
     ('S5', 'Compared samples: one row per comparison of two groups of samples, with the reason for the comparison.'),
     ('S6', 'Sensitivity analyses: the human-mouse classification with each orthology definition; effect sizes on the '
            'events testable in all 15 dataset pairs; events with well-supported splice-site correspondence; '
-           'classification by minor-isoform usage; alternative splice sites up to six nucleotides apart; and the '
+           'classification by minor-isoform usage; alternative splice sites up to six nucleotides apart; the classification applied to the splits of the six datasets that mix the species; and the '
            'status in the other cell types of events differentially spliced in one cell type.'),
     ('S7', 'Effect of coverage, number of junctions and number of events per gene on testability and classification '
            '(logistic regression; odds ratios and P values).'),
