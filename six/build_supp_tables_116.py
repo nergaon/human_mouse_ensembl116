@@ -36,20 +36,21 @@ DATASETS = {'H1': 'GSE60424', 'H2': 'GSE115736', 'H3': 'GSE118165', 'M1': 'GSE28
 
 
 def write(name, title, note, sheets):
-    """sheets: {sheet name: DataFrame}; row 1 title, row 2 note, header in row 3. Internal table names are
+    """sheets: {sheet name: DataFrame}; row 1 title, row 2 note (one string for all sheets, or {sheet: note}),
+    header in row 3. Internal table names are
     renumbered for publication (table_numbers_116); the removed coverage table (internal S7) is not written."""
     import table_numbers_116 as tn
     if tn.name(name) is None:
         print('not written (removed table):', name)
         return
-    name, title, note = tn.name(name), tn.renum(title), tn.renum(note)
+    name, title = tn.name(name), tn.renum(title)
     path = OUT + f'{name}.xlsx'
     with pd.ExcelWriter(path, engine='openpyxl') as xw:
         for sheet, df in sheets.items():
             df.to_excel(xw, sheet_name=sheet[:31], index=False, startrow=2)
             ws = xw.sheets[sheet[:31]]
             ws['A1'] = title
-            ws['A2'] = note
+            ws['A2'] = tn.renum(note[sheet] if isinstance(note, dict) else note)
             ws.freeze_panes = 'A4'
             for col in ws.iter_cols(min_row=3, max_row=min(ws.max_row, 200)):
                 width = max(len(str(c.value)) if c.value is not None else 0 for c in col)

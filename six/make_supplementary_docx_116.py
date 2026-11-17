@@ -54,7 +54,7 @@ DATA_SHEETS = [
     ('S12', 'Functional enrichment: the significant terms of the genes with only splicing conserved events, and the terms that '
             'remain significant after adjusting for coverage.'),
     ('S13', 'Sex, age and tissue control comparisons (Supplementary Note 1): events, % differentially spliced, median '
-            'max(|ΔPSI|) and PSI correlation in the control and in the human-mouse pairs, and the paired Wilcoxon test.'),
+            'max(|ΔPSI|) and PSI correlation in the control and in the human-mouse pairs.'),
 ]
 
 FIG_LEGENDS = [

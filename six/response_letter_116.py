@@ -36,10 +36,8 @@ LETTER = [
     'differences is more than 1.5 times every one of the six differences between datasets of the same species. All '
     'other testable events are inconclusive. To verify that this classification separates species from dataset '
     'differences, we applied it to the nine other ways of splitting the six datasets into two groups of three, '
-    'which mix the species: a difference of at least 0.1 between the group means alone was found for 55-65% as many'
-    ' events as for the human-mouse split, but with the requirement that every between-group difference exceeds 1.5'
-    ' times every within-group difference, for only 1.5-3.6% as many (2.9-4.9 events per cell type on average; '
-    'Table S6).'),
+    'which mix the species: it found only 1.5-3.6% as many differentially spliced events as for the human-mouse '
+    'split (2.9-4.9 events per cell type on average; Table S6).'),
     ('3. Splicing conservation instead of "splicing unchanged". In each comparison of two groups of samples (within '
     'species, fibroblasts and the control comparisons), "splicing unchanged" (no significant difference) was '
     'replaced by a three-way classification: differentially spliced (LeafCutter adjusted P ≤ 0.05 and max|ΔPSI| ≥ '
@@ -77,8 +75,6 @@ LETTER = [
     ('Hadas Ner-Gaon, Naama Nudelman and Tal Shay'),
 ]
 
-CONTROLS = 'male vs female (human: five cell types, GSE107011; mouse: B cells, ENCODE), young vs old (human and mouse naive CD4 T cells, GSE143213 and GSE184496) and two tissues (human NK cells from blood and spleen of the same donors, GSE133383; mouse NK cells from spleen and liver, GSE233347; mouse monocytes from bone marrow and blood, GSE116177, and from blood and spleen, PRJNA797236)'
-
 R1 = [
     ('We thank the reviewer for this important point. We agree that a comparison of public human and mouse datasets '
     'cannot completely isolate a species effect, as tissue source, age and other factors are aligned with species '
@@ -103,9 +99,8 @@ R1 = [
     'events, only 0-0.15%, 0-1.2% and 0-6.2% of the events were differentially spliced by sex, age and tissue, '
     'respectively; the effect sizes were much smaller than between human and mouse (median max(|ΔPSI|) 0.015-0.045 '
     'vs 0.087-0.118, and 0.052-0.089 between datasets of the same species; means over dataset pairs) and the PSI '
-    'correlations higher (0.98-0.996 vs 0.85-0.90), and the human-mouse differences were larger than those of every'
-    ' control comparison (paired Wilcoxon test, P < 10^-200; Supplementary Note 1, Figure S7, Table S12). These '
-    'factors therefore cannot account for the human-mouse differences.'),
+    'correlations higher (0.98-0.996 vs 0.85-0.90; Supplementary Note 1, Figure S7, Table S12). These factors '
+    'therefore cannot account for the human-mouse differences.'),
     ('We agree. (a) Each cell type is now compared between three human and three mouse datasets, and every dataset '
     'has at least three replicates of the cell type (3-6 in the mouse datasets; Table S4). As no mouse dataset '
     'profiles all five cell types with at least three replicates, the three mouse datasets were assembled per cell '
@@ -142,16 +137,17 @@ R2 = [
     ('We thank the reviewer for this suggestion, which we implemented. In the new Figure 3, we compare the '
     'distributions of max(|ΔPSI|) between human-mouse, human-human and mouse-mouse comparisons on the same events '
     '(the 2,329-2,887 events per cell type that are testable in all 15 dataset pairs). In every cell type, human-'
-    'mouse differences are larger than within-species differences (paired Wilcoxon test, P < 10^-216; Figure 3A, in'
-    ' which each of the 15 comparisons is shown separately), and the PSI correlations are lower between species (r '
-    '= 0.80-0.92 vs 0.90-0.99; Figure 3B). Dataset variability is now estimated from three human-human and three '
-    'mouse-mouse pairs per cell type (Figure S1A), and the classification of each event uses it directly: an event '
-    'is differentially spliced only if every human-mouse dataset difference is more than 1.5 times every within-'
-    'species dataset difference (with a difference of at least 0.1 between the mean human and mouse PSI). We also '
-    'added control comparisons within each species that differ only in sex, age or tissue of origin, which showed '
-    'far smaller differences than species (0-6.2% of the events differentially spliced, and much smaller effect '
-    'sizes; Supplementary Note 1, Figure S7, Table S12), and we discuss the remaining confounders (sequencing '
-    'depth, library preparation, tissue source, age, sex, genetic background) in the Discussion.'),
+    'mouse differences are larger than within-species differences (median max(|ΔPSI|) 0.090-0.118 vs 0.063-0.087; '
+    'Figure 3A, in which each of the 15 comparisons is shown separately), and the PSI correlations are lower '
+    'between species (r = 0.80-0.92 vs 0.90-0.99; Figure 3B). Dataset variability is now estimated from three '
+    'human-human and three mouse-mouse pairs per cell type (Figure S1A), and the classification of each event uses '
+    'it directly: an event is differentially spliced only if every human-mouse dataset difference is more than 1.5 '
+    'times every within-species dataset difference (with a difference of at least 0.1 between the mean human and '
+    'mouse PSI). We also added control comparisons within each species that differ only in sex, age or tissue of '
+    'origin, which showed far smaller differences than species (0-6.2% of the events differentially spliced, and '
+    'much smaller effect sizes; Supplementary Note 1, Figure S7, Table S12), and we discuss the remaining '
+    'confounders (sequencing depth, library preparation, tissue source, age, sex, genetic background) in the '
+    'Discussion.'),
     ('We agree that this needed clarification. In the revised manuscript, the primary evidence for species '
     'divergence is the classification of each event from all six datasets of each cell type (Methods 2.5, Figure '
     '1B): it is differentially spliced if the ANOVA over the six datasets is significant (Benjamini-Hochberg '
@@ -160,12 +156,10 @@ R2 = [
     'six differences between datasets of the same species. Of the 2,509-2,972 events testable in each cell type, '
     '136-232 (5.2-7.8%) are differentially spliced (526 events in at least one cell type; Results 3.2, Table 1, '
     'Tables S9, S10). For these events, the largest difference between datasets of the same species is much smaller'
-    ' than the smallest human-mouse difference (median 0.08-0.10 vs 0.21-0.26). A difference between the mean human'
-    ' and mean mouse PSI alone also reflects dataset differences; we therefore applied the same classification to '
-    'the nine splits of the six datasets into two groups of three that mix the species: a difference of at least '
-    '0.1 between the group means alone was found for 55-65% as many events as for the human-mouse split, but with '
-    'the requirement that every between-group difference exceeds 1.5 times every within-group difference, for only '
-    '1.5-3.6% as many (2.9-4.9 events per cell type on average; Table S6). We state in the Methods and the '
+    ' than the smallest human-mouse difference (median 0.08-0.10 vs 0.21-0.26). To verify that it separates species'
+    ' from dataset differences, we applied the same classification to the nine splits of the six datasets into two '
+    'groups of three that mix the species: it found only 1.5-3.6% as many differentially spliced events as for the '
+    'human-mouse split (2.9-4.9 events per cell type on average; Table S6). We state in the Methods and the '
     'limitations that this requirement is a threshold rather than a statistical test of the dataset effect. The '
     'single human-mouse pairs (Figure 2C) and the threshold-free effect sizes (Figure 3) are presented as '
     'supporting evidence. The title was moderated ("Limited conservation of alternative splicing use ratio between '

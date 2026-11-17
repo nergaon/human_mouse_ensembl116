@@ -72,8 +72,10 @@ def common_events_summary(ev, jun):
     # paired test per cell: human-mouse event |dPSI| vs within-species, on the common events
     tests = []
     for cell in CELLS:
-        p = e[(e['cell'] == cell)].pivot_table(index='cluster', columns='comparison', values='max_abs_dpsi')
-        p = p.dropna()
+        ec = e[e['cell'] == cell]
+        tested = ec[ec['testable']].groupby('cluster')['comparison'].nunique()
+        common = tested[tested == ec['comparison'].nunique()].index      # the same common events as above
+        p = ec[ec['cluster'].isin(common)].pivot_table(index='cluster', columns='comparison', values='max_abs_dpsi')
         cross = [c for c in p if kind(c) == 'cross']
         within = [c for c in p if kind(c) in ('HH', 'MM')]
         tests.append(dict(cell=cell, events=len(p),

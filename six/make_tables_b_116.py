@@ -55,9 +55,12 @@ def main(only=None):
         rc = read('S1', 'rank_consistency')[['orthology', 'in_canonical_transcript_of_both', 'pct_same_rank',
                                             'pct_constant_offset_within_gene']]
         bst.write('Table_S1', 'Supplementary Table S1: Human-mouse exon orthology',
-                  'Orthologous exons and unique orthologous exon boundaries for each orthology definition, and the exon-rank '
-                  'consistency of the boundaries used by the alternative splicing events (in canonical transcripts of both '
-                  'species).', {'orthology': s1, 'rank_consistency': rc})
+                  {'orthology': 'For each definition of exon orthology: genes with orthologous exons, human (h) and mouse '
+                                '(m) exons and those with an ortholog, and unique orthologous exon boundaries.',
+                   'rank_consistency': 'For the exon boundaries used by the alternative splicing events, in canonical '
+                                       'transcripts of both species: % with the same exon rank in human and mouse, and % '
+                                       'with a constant rank offset within the gene.'},
+                  {'orthology': s1, 'rank_consistency': rc})
 
     def s2():
         # S2: one row per sample, the fields named in Methods 2.2
@@ -84,23 +87,34 @@ def main(only=None):
         # S6: only the sensitivity results reported in the text
         orth = read('S6', 'orthology_cutoff')[['orthology', 'cell', 'testable', 'pct_DS', 'DS events (any cell type)']]
         ce = read('S6', 'common_events')
-        cet = read('S6', 'common_events_tests')
         ss = read('S6', 'splice_site_subset')
         ss = ss[ss['subset'].isin(['all', 'correspondence'])][['subset', 'cell', 'testable', 'pct_DS']]
         mu = read('S6', 'minor_isoform_usage')[['usage_bin', 'DS', 'splicing conserved', 'inconclusive', 'DS %', 'splicing conserved %']]
         sh = read('S6', 'small_shift_A3SS_A5SS')[['event_type', 'pct_DS_small', 'pct_DS_larger', 'fisher_p']]
         sc = read('S6', 'single_cell_type_DS')[['DS_in_one_cell_type', 'status_in_other_cell_types', 'percent']]
         sp = read('S6', 'species_vs_mixed_splits')
-        bst.write('Table_S6', 'Supplementary Table S6: Sensitivity analyses',
-                  'orthology_cutoff: % differentially spliced (DS) per cell type and DS events in any cell type, for each '
-                  'orthology definition. common_events: on the events testable in all 15 dataset pairs, median max|dPSI| '
-                  'and Pearson r per pair, and the paired Wilcoxon test that human-mouse > within-species. splice_site: % DS '
-                  'among all events and among events with well-supported splice-site correspondence. minor_isoform: '
-                  'classification by minor-isoform usage. small_shift: % DS for alternative splice sites up to 6 nt apart '
-                  'vs more distant. single_cell_type_DS: status in the other cell types of events DS in one cell type. '
-                  'species_vs_mixed_splits: the classification applied to every split of the six datasets into two groups '
-                  'of three; the human-mouse split vs the nine splits that mix the species.',
-                  {'orthology_cutoff': orth, 'common_events': ce, 'common_events_tests': cet, 'splice_site': ss,
+        bst.write('Table_S6', 'Supplementary Table S6: Sensitivity analyses', {
+            'orthology_cutoff': 'Human-mouse classification with each definition of exon orthology (id50, id70, id80: at '
+                                'least 50%, 70% or 80% identity; id50_rbh: 50% identity and reciprocal best match): '
+                                'testable events and % differentially spliced (DS) per immune cell type, and the number '
+                                'of events DS in at least one cell type.',
+            'common_events': 'Events testable in all 15 dataset pairs of a cell type (common_events): for each pair, '
+                             'the median max|dPSI| of the events and the Pearson r of the junction PSIs (Figure 3). '
+                             'kind: HH, human-human; MM, mouse-mouse; cross, human-mouse.',
+            'splice_site': 'Testable events and % differentially spliced per cell type, among all events and among the '
+                           'events with well-supported human-mouse splice-site correspondence (Methods).',
+            'minor_isoform': 'Human-mouse classifications (event x cell type) by the usage of the minor isoform (PSI of '
+                             'the less used isoform, averaged over the six datasets): number and % differentially '
+                             'spliced, splicing conserved and inconclusive.',
+            'small_shift': "Alternative 3' (A3SS) and 5' (A5SS) splice site events: % differentially spliced among "
+                           'events with alternative splice sites up to 6 nt apart (small) and more distant (larger), '
+                           "and Fisher's exact test P.",
+            'single_cell_type_DS': 'Events differentially spliced in only one immune cell type: their status in the '
+                                   'other cell types (% of the event x cell type combinations).',
+            'species_vs_mixed_splits': 'Number of differentially spliced events per cell type when the classification '
+                                       'is applied to each split of the six datasets into two groups of three: the '
+                                       'human-mouse split and the nine splits that mix the species.'},
+                  {'orthology_cutoff': orth, 'common_events': ce, 'splice_site': ss,
                    'minor_isoform': mu, 'small_shift': sh, 'single_cell_type_DS': sc,
                    'species_vs_mixed_splits': sp})
 
@@ -157,13 +171,11 @@ def main(only=None):
     def s13():
         # S13: the control results reported in Supplementary Note 1
         s13 = read('S13')[['comparison', 'dataset', 'cell_type', 'common_events', 'pct_DS_control',
-                           'median_abs_dpsi_control', 'median_abs_dpsi_cross', 'pearson_control', 'pearson_cross',
-                           'wilcoxon_p_human_mouse_gt_control']]
+                           'median_abs_dpsi_control', 'median_abs_dpsi_cross', 'pearson_control', 'pearson_cross']]
         bst.write('Table_S13', 'Supplementary Table S13: Sex, age and tissue controls',
                   'Per control comparison: events (testable in the control and in all nine human-mouse pairs), % '
                   'differentially spliced in the control, median max|dPSI| and Pearson r in the control and in the '
-                  'human-mouse pairs (cross; mean over the nine pairs), and the paired Wilcoxon test that human-mouse > '
-                  'control.', {'controls': s13})
+                  'human-mouse pairs (cross; mean over the nine pairs).', {'controls': s13})
 
     steps = {'S1': s1, 'S2': s2, 'S3': s3, 'S6': s6, 'S8': s8, 'S9': s9, 'S11': s11, 'S12': s12, 'S13': s13}
     for n, step in steps.items():
