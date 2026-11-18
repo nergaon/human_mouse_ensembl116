@@ -114,11 +114,33 @@ def table_s4():
                                           for v in ['id50', 'id70', 'id80', 'id50_rbh']])})
 
 
-def table_s5(points, ann):
+def junction_annotation(ids, points, ann):
+    """Orthologous mouse junction, exon ranks, event, gene, type and splice-site support of each junction id
+    (chr:start:end:clu_N)."""
     info = ann.set_index('cluster')
     h2m = dict(zip(points['position_h'], points['position_m']))
     rank_h = dict(zip(points['position_h'], points['rank_h']))
     rank_m = dict(zip(points['position_h'], points['rank_m']))
+    parts = pd.Index(ids).to_series().str.split(':', expand=True)
+    return pd.DataFrame({
+        'Human junction': parts[0] + ':' + parts[1] + ':' + parts[2],
+        'Mouse junction (orthologous)': [
+            f"{h2m.get(f'{c}:{s}', 'NA')}-{str(h2m.get(f'{c}:{e}', 'NA')).split(':')[-1]}"
+            for c, s, e in zip(parts[0], parts[1], parts[2])],
+        'Human exon ranks (junction start-end)': [
+            f"{rank_h.get(f'{c}:{s}', 'NA')}-{rank_h.get(f'{c}:{e}', 'NA')}"
+            for c, s, e in zip(parts[0], parts[1], parts[2])],
+        'Mouse exon ranks (junction start-end)': [
+            f"{rank_m.get(f'{c}:{s}', 'NA')}-{rank_m.get(f'{c}:{e}', 'NA')}"
+            for c, s, e in zip(parts[0], parts[1], parts[2])],
+        'Alternative splicing event ID': parts[0] + ':' + parts[3],
+        'Human gene symbol': parts[3].map(info['symbol']).values,
+        'Alternative splicing type': parts[3].map(info['event_type']).values,
+        'Well-supported splice-site correspondence': parts[3].map(info['splice_site_correspondence']).values},
+        index=ids)
+
+
+def table_s5(points, ann):
     sheets = {}
     # only the pairs of the article (matched_ pairwise LeafCutter runs are not reported; the matched populations are
     # analysed by the five-dataset classification, Table S6)
@@ -140,24 +162,7 @@ def table_s5(points, ann):
                 rows = part if rows is None else rows.join(part, how='outer')
             if rows is None:
                 continue
-            idx = rows.index.to_series()
-            parts = idx.str.split(':', expand=True)
-            first = pd.DataFrame({
-                'Human junction': parts[0] + ':' + parts[1] + ':' + parts[2],
-                'Mouse junction (orthologous)': [
-                    f"{h2m.get(f'{c}:{s}', 'NA')}-{str(h2m.get(f'{c}:{e}', 'NA')).split(':')[-1]}"
-                    for c, s, e in zip(parts[0], parts[1], parts[2])],
-                'Human exon ranks (junction start-end)': [
-                    f"{rank_h.get(f'{c}:{s}', 'NA')}-{rank_h.get(f'{c}:{e}', 'NA')}"
-                    for c, s, e in zip(parts[0], parts[1], parts[2])],
-                'Mouse exon ranks (junction start-end)': [
-                    f"{rank_m.get(f'{c}:{s}', 'NA')}-{rank_m.get(f'{c}:{e}', 'NA')}"
-                    for c, s, e in zip(parts[0], parts[1], parts[2])],
-                'Alternative splicing event ID': parts[0] + ':' + parts[3],
-                'Human gene symbol': parts[3].map(info['symbol']).values,
-                'Alternative splicing type': parts[3].map(info['event_type']).values,
-                'Well-supported splice-site correspondence': parts[3].map(info['splice_site_correspondence']).values},
-                index=rows.index)
+            first = junction_annotation(rows.index, points, ann)
             sheets[('matched_' if subset == 'matched' else '') + pair] = pd.concat([first, rows], axis=1)
     # ANOVA version: no split-based summary sheet (per-event classification in Table S11)
     write('Table_S8', 'Supplementary Table S8: Junction-level LeafCutter differential splicing results',
@@ -335,7 +340,7 @@ def table_s11():
     d = pd.read_csv(ED + 'revision/dpsi_cutoff_sensitivity.tsv', sep='\t')
     sheets['dPSI_cutoff_within_species'] = d[d['kind'].isin(['HH', 'MM', 'fibro'])]
     ce = pd.read_csv(ED + 'revision/common_events_summary.tsv', sep='\t')
-    sheets['common_events'] = ce[['cell', 'comparison', 'kind', 'common_events', 'median_max_abs_dpsi', 'pearson']]
+    sheets['common_events'] = ce[['cell', 'comparison', 'kind', 'common_events', 'mean_max_abs_dpsi', 'pearson']]
     sheets['common_events_tests'] = pd.read_csv(ED + 'revision/common_events_tests.tsv', sep='\t')
     ss = pd.read_csv(ED + 'revision/splice_site_subset_summary.tsv', sep='\t')
     sheets['splice_site_subset'] = ss[['subset', 'cell', 'testable', 'pct_high_divergent', 'pct_high_conserved']] \

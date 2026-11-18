@@ -22,13 +22,14 @@ A4 = (2480, 3508)
 
 # new figure name: (source of panel A, new panel B image)
 FIGURES = {
-    'Figure_4': (UP + 'figure_3_v11_USP16.pdf', PANELS + 'USP16_clu_52748.png'),
-    'Figure_S4': ('/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/revision_anova/figures/panels/PUF60_Image_2_fixed.tif', PANELS + 'PUF60_clu_86301.png'),  # mouse coordinates fixed (fix_figS4_panelA_116.py)
-    'Figure_S5': (UP + 'Image_3.TIFF', PANELS + 'RPL22L1_clu_65288.png'),
-    'Figure_S8': ('/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/revision_anova/figures/panels/DOCK8_panelA_fixed.png', PANELS + 'DOCK8_clu_91182.png'),  # title fixed (fix_figS8_panelA_116.py)
-    'Figure_S9': (UP + 'Image_6.TIFF', PANELS + 'PTPRC_clu_44871.png'),
-    'Figure_S10': (UP + 'Image_7.TIFF', PANELS + 'CD47_clu_63292.png'),
-    'Figure_S6': (UP + 'Image_8.TIFF', PANELS + 'UCKL1_clu_52538.png'),
+    'Figure_4': (UP + 'figure_3_v11_USP16.pdf', PANELS + 'USP16_clu_52830.png'),
+    'Figure_S4': ('/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/revision_anova/figures/panels/PUF60_Image_2_fixed.tif', PANELS + 'PUF60_clu_86433.png'),  # mouse coordinates fixed (fix_figS4_panelA_116.py)
+    'Figure_S5': (UP + 'Image_3.TIFF', PANELS + 'RPL22L1_clu_65387.png'),
+    'Figure_S8': (UP + 'Image_6.TIFF', PANELS + 'PTPRC_clu_44935.png'),
+    'Figure_S9': (UP + 'Image_7.TIFF', PANELS + 'CD47_clu_63390.png'),
+    'Figure_S6': (UP + 'Image_8.TIFF', PANELS + 'UCKL1_clu_52620.png'),
+    # removed from the manuscript (2026-11-17), kept as a figure named by its gene
+    'Figure_DOCK8': ('/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/revision_anova/figures/panels/DOCK8_panelA_fixed.png', PANELS + 'DOCK8_clu_91320.png'),
 }
 
 
@@ -88,7 +89,7 @@ def assemble(name, src, panel_b):
 
 # figures with panel A drawn by gene_diagram_116.py (Figure 5 was HNRNPK in the submitted manuscript)
 DRAWN = {
-    'Figure_5': (PANELS + 'EIF4B_clu_12789_A.png', PANELS + 'EIF4B_clu_12789.png'),
+    'Figure_5': (PANELS + 'EIF4B_clu_12809_A.png', PANELS + 'EIF4B_clu_12809.png'),
 }
 # candidate figures, not in the manuscript (FERMT3, removed 2026-11-02, was a boundary-mapping artifact)
 CANDIDATES = {}
@@ -121,7 +122,22 @@ def assemble_drawn(name, panel_a, panel_b, folder=FIG + 'candidates/', label=Fal
     print('wrote', name)
 
 
+# candidate gene figures in the figures folder, named by gene and event type (not in the manuscript; 2026-11-18)
+GENE_CANDIDATES = {
+    'Figure_CIITA_A3SS': (PANELS + 'CIITA_clu_23540_A.png', PANELS + 'CIITA_clu_23540.png'),
+    'Figure_CIITA_SE': (PANELS + 'CIITA_clu_23547_A.png', PANELS + 'CIITA_clu_23547.png'),
+    # DS in CD8 T cells and splicing conserved in monocytes
+    'Figure_KLF3': (PANELS + 'KLF3_clu_70891_A.png', PANELS + 'KLF3_clu_70891.png'),
+    # DS in all five immune cell types, both junctions used in both species (alternative 5' sites 9 nt apart)
+    'Figure_PSMD4': (PANELS + 'PSMD4_clu_42544_A.png', PANELS + 'PSMD4_clu_42544.png'),
+    # alternative first exon, DS in CD8 T cells and splicing conserved in B cells
+    'Figure_ATF7IP': (PANELS + 'ATF7IP_clu_11399_A.png', PANELS + 'ATF7IP_clu_11399.png'),
+}
+
+
 def main():
+    for name, (a, b) in GENE_CANDIDATES.items():
+        assemble_drawn(name, a, b, folder=FIG, label=True)
     for name, (a, b) in CANDIDATES.items():
         assemble_drawn(name, a, b)
     for name, (a, b) in DRAWN.items():

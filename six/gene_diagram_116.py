@@ -128,8 +128,10 @@ def draw_track(ax, y, exons, juncs, colors, name, coords=None, below=()):
         ax.text(x, y + 0.55, header, ha='left', va='center', fontsize=8, fontweight='bold')
         for k, (lab, c) in enumerate(zip(labels, colors)):
             yy = y + 0.25 - 0.32 * k
-            ax.text(x, yy, lab, ha='left', va='center', fontsize=7.5)
-            ax.add_patch(Rectangle((x + 1.75, yy - 0.09), 0.18, 0.18, facecolor=c, edgecolor='none'))
+            t = ax.text(x, yy, lab, ha='left', va='center', fontsize=7.5)
+            # colour key just after the label (placed relative to the text, so long coordinates do not overlap it)
+            ax.annotate('\u25A0', xy=(1, 0.5), xycoords=t, xytext=(4, 0), textcoords='offset points',
+                        ha='left', va='center', fontsize=9, color=c)
     return width
 
 

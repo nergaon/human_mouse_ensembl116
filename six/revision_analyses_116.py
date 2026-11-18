@@ -66,7 +66,7 @@ def common_events_summary(ev, jun):
                              pct_DS=100 * (x['status_m0.05'] == 'DS').mean(),
                              pct_equivalent_m005=100 * (x['status_m0.05'] == 'equivalent').mean(),
                              pct_equivalent_m01=100 * (x['status_m0.1'] == 'equivalent').mean(),
-                             median_max_abs_dpsi=x['max_abs_dpsi'].median(),
+                             mean_max_abs_dpsi=x['max_abs_dpsi'].mean(),
                              pearson=stats.pearsonr(j['psi1'], j['psi2'])[0]))
     out = pd.DataFrame(rows)
     # paired test per cell: human-mouse event |dPSI| vs within-species, on the common events
@@ -238,7 +238,7 @@ def main():
     r2, t2 = common_events_summary(ev, jun)
     r2.to_csv(out + 'common_events_summary.tsv', sep='\t', index=False)
     t2.to_csv(out + 'common_events_tests.tsv', sep='\t', index=False)
-    print(r2.groupby(['kind', 'cell'])[['common_events', 'pct_DS', 'pct_equivalent_m005', 'median_max_abs_dpsi',
+    print(r2.groupby(['kind', 'cell'])[['common_events', 'pct_DS', 'pct_equivalent_m005', 'mean_max_abs_dpsi',
                                         'pearson']].agg(['min', 'max']).round(2).to_string())
     print(t2.to_string(index=False))
 

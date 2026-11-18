@@ -54,7 +54,7 @@ def main():
                 r = g[g['kind'] == k]
                 if len(r):
                     row[f'pct_DS_{k}'] = round(r['pct_DS_mean'].iloc[0], 2)
-                    row[f'median_abs_dpsi_{k}'] = round(r['mean_median_max_abs_dpsi'].iloc[0], 3)
+                    row[f'mean_abs_dpsi_{k}'] = round(r['mean_mean_max_abs_dpsi'].iloc[0], 3)
                     row[f'pearson_{k}'] = round(r['pearson_mean'].iloc[0], 3)
             row['wilcoxon_p_human_mouse_gt_control'] = tests.get((comp, cell))
             rows.append(row)
@@ -68,7 +68,7 @@ def main():
         ws['A2'] = ('Each control varies one factor within a species (same cell type, laboratory and protocol). '
                     'Comparisons with human-mouse (cross), human-human (HH) and mouse-mouse (MM) dataset pairs use '
                     'the events testable in the control and in every human-mouse pair of the cell type (common '
-                    'events); median_abs_dpsi = median event max|dPSI|; values for HH, MM and cross are means over dataset '
+                    'events); mean_abs_dpsi = mean event max|dPSI|; values for HH, MM and cross are means over dataset '
                     'pairs. DS: p.adjust <= 0.05 and '
                     'max|dPSI| >= 0.1. Wilcoxon: paired test that the mean human-mouse max|dPSI| is larger than in '
                     'the control.')
@@ -93,7 +93,7 @@ def main():
             species.append(label.split()[0])
             for k in COLORS:
                 r = g[g['kind'] == k]
-                v = (r[['pct_DS_mean', 'mean_median_max_abs_dpsi', 'pearson_mean']].iloc[0].values.astype(float)
+                v = (r[['pct_DS_mean', 'mean_mean_max_abs_dpsi', 'pearson_mean']].iloc[0].values.astype(float)
                      if len(r) else np.full(3, np.nan))
                 if k != 'control':
                     v[0] = table1.get((k, cell), np.nan)
@@ -101,7 +101,7 @@ def main():
     fig, axes = plt.subplots(3, 1, figsize=(7.2, 7.6), sharex=True, gridspec_kw={'hspace': 0.15})
     x = np.arange(len(labels))
     w = 0.2
-    for j, (ylab, lim) in enumerate([('% differentially spliced', None), ('median event max |ΔPSI|', None),
+    for j, (ylab, lim) in enumerate([('% differentially spliced', None), ('mean event max |ΔPSI|', None),
                                      ('Pearson r of junction PSI', (0.75, 1.0))]):
         ax = axes[j]
         for i, k in enumerate(COLORS):

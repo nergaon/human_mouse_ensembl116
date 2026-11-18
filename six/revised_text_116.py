@@ -760,6 +760,8 @@ from text_6ds_updates import UPDATES6  # noqa: E402
 EDITS.update(UPDATES6)
 from text_6ds_updates import INSERT_UPDATES6  # noqa: E402
 INSERTS.update(INSERT_UPDATES6)
+from text_6ds_updates import NEW_REFS6  # noqa: E402
+NEW_REFERENCES.update(NEW_REFS6)
 
 # published supplementary table numbers (the coverage table, internal S7, was removed)
 import table_numbers_116 as _tn  # noqa: E402

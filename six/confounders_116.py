@@ -107,7 +107,8 @@ def summary():
         for k, g in e[e['cluster'].isin(common)].groupby('kind'):
             per = g.groupby('comparison').apply(lambda x: pd.Series({
                 'pct_DS': 100 * (x['status_m0.05'] == 'DS').mean(),
-                'median_max_abs_dpsi': x['max_abs_dpsi'].median()}))
+                'median_max_abs_dpsi': x['max_abs_dpsi'].median(),
+                'mean_max_abs_dpsi': x['max_abs_dpsi'].mean()}))
             j = jun[(jun['cell'] == cell) & jun['cluster'].isin(common) & jun['testable'] & (jun['kind'] == k)]
             j = j[j['comparison'].eq(comp) | ~j['kind'].eq('control')]
             r = j.groupby('comparison').apply(lambda x: stats.pearsonr(x['psi1'], x['psi2'])[0]
@@ -117,6 +118,7 @@ def summary():
                              pct_DS_max=per['pct_DS'].max(),
                              median_max_abs_dpsi=per['median_max_abs_dpsi'].median(), pearson_median=r.median(),
                              pct_DS_mean=per['pct_DS'].mean(), mean_median_max_abs_dpsi=per['median_max_abs_dpsi'].mean(),
+                             mean_mean_max_abs_dpsi=per['mean_max_abs_dpsi'].mean(),
                              pearson_mean=r.mean()))
         # paired test: events' |dPSI| in the control comparison vs the mean over human-mouse pairs
         p = e[e['cluster'].isin(common)].pivot_table(index='cluster', columns='comparison', values='max_abs_dpsi')

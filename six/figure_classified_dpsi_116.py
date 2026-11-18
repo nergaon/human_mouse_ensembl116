@@ -3,8 +3,8 @@
 Splicing differences of the classified events in every comparison.
 
 For each immune cell type, the events classified as species-divergent or as conserved (high or low confidence, i.e.
-from the human-mouse pairs only) are shown with their max|dPSI| in each of the ten comparisons (3 human-human,
-1 mouse-mouse, 6 human-mouse) in which they are testable, so that the within-species differences of these events
+from the human-mouse pairs only) are shown with their max|dPSI| in each of the 15 comparisons (3 human-human,
+3 mouse-mouse, 9 human-mouse) in which they are testable, so that the within-species differences of these events
 can be compared with their human-mouse differences.
 Figure S3. Output: revision_6ds/figures/Figure_S3.pdf/.tif and events/id50_6ds_anova/revision/classified_dpsi_by_comparison.tsv
 """
@@ -35,13 +35,13 @@ def main():
             data = [e.loc[e['comparison'] == c, 'max_abs_dpsi'].values for c in ORDER]
             for c, d in zip(ORDER, data):
                 rows.append(dict(cell=cell, cls=cls, comparison=c, kind=KIND_LABEL[kind(c)], events=len(d),
-                                 median_max_abs_dpsi=np.median(d) if len(d) else np.nan,
+                                 mean_max_abs_dpsi=np.mean(d) if len(d) else np.nan,
                                  pct_dpsi_ge_0_1=100 * np.mean(d >= 0.1) if len(d) else np.nan))
             ax = axes[i, j]
             boxes(ax, data, (0, 0.6))
             ax.axhline(0.1, color='#6b6b6b', lw=0.6, ls=':')
             for x, d in enumerate(data):
-                ax.text(x, 1.01, f'{np.median(d):.2f}' if len(d) else '', ha='center', va='bottom', fontsize=4.5,
+                ax.text(x, 1.01, f'{np.mean(d):.2f}' if len(d) else '', ha='center', va='bottom', fontsize=4.5,
                         transform=ax.get_xaxis_transform())
             ax.set_ylabel('event max |ΔPSI|')
             name = 'Differentially spliced' if cls == 'divergent' else 'Splicing conserved'
@@ -55,7 +55,7 @@ def main():
     save(fig, 'Figure_S3')
     t = pd.DataFrame(rows).round(3)
     t.to_csv(ED + 'revision/classified_dpsi_by_comparison.tsv', sep='\t', index=False)
-    print(t.groupby(['cls', 'kind'])['median_max_abs_dpsi'].agg(['min', 'max']).to_string())
+    print(t.groupby(['cls', 'kind'])['mean_max_abs_dpsi'].agg(['min', 'max']).to_string())
 
 
 if __name__ == '__main__':

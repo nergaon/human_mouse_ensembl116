@@ -97,7 +97,7 @@ for f in ['dpsi_cutoff_sensitivity', 'common_events_tests', 'splice_site_subset_
           'fibroblast_effects', 'enrichment_summary', 'minor_usage_summary']:
     p(f'## {f}'); p(pd.read_csv(ED + f'revision/{f}.tsv', sep='\t').round(4).to_string(index=False))
 ce = pd.read_csv(ED + 'revision/common_events_summary.tsv', sep='\t')
-p('## common events by kind'); p(ce.groupby('kind')[['common_events', 'pct_DS', 'pct_equivalent_m005', 'median_max_abs_dpsi', 'pearson']]
+p('## common events by kind'); p(ce.groupby('kind')[['common_events', 'pct_DS', 'pct_equivalent_m005', 'mean_max_abs_dpsi', 'pearson']]
                                  .agg(['min', 'max']).round(2).to_string())
 # fibroblasts (Figure 6 A-D numbers)
 hm = ev[ev['comparison'] == 'H2_M1']

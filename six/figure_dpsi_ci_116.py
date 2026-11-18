@@ -20,7 +20,8 @@ from figures_main_116 import CELL_LABEL, CELLS, ED, KIND_COLORS, KIND_LABEL, OUT
 
 matplotlib.rcParams.update({'font.family': 'Liberation Sans', 'font.size': 7, 'pdf.fonttype': 42,
                             'axes.spines.top': False, 'axes.spines.right': False})
-ORDER = ['H1_H2', 'H1_H3', 'H2_H3', 'M1_M2', 'H1_M1', 'H1_M2', 'H2_M1', 'H2_M2', 'H3_M1', 'H3_M2']
+ORDER = ['H1_H2', 'H1_H3', 'H2_H3', 'M1_M2', 'M1_M3', 'M2_M3', 'H1_M1', 'H1_M2', 'H1_M3', 'H2_M1', 'H2_M2', 'H2_M3',
+         'H3_M1', 'H3_M2', 'H3_M3']   # the 15 dataset pairs of the six-dataset design
 
 
 def boxes(ax, data, ylim):

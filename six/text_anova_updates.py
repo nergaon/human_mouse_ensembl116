@@ -91,7 +91,7 @@ UPDATES = {
         'If two or more candidates were tied for the highest score, the candidate whose exons belong to canonical '
         'transcripts (rather than non-canonical transcripts) was selected, then the candidate with the higher average '
         'identity, and if the tie remained, the first candidate in genomic coordinate order, which decided the partner '
-        'of 4,428 of the 390,686 human boundaries (1.1%). The same procedure was applied in reverse when a single mouse exon '
+        'of 4,794 of the 390,686 human boundaries (1.2%). The same procedure was applied in reverse when a single mouse exon '
         'boundary has more than one candidate orthologous human boundaries, and a human and a mouse boundary are '
         'paired only if each is the best candidate of the other (mutual best), so that a boundary whose best candidate '
         'is paired with another boundary is left unpaired rather than paired with a lower-scoring candidate. Because a '

@@ -67,10 +67,16 @@ def main(only=None):
         s2 = read('S2', header=1)
         keep = ['dataset', 'species', 'GSM', 'sample_name_used', 'group_name', 'tissue_source',
                 'sorting_definition_markers', 'cell_state', 'treatment_condition', 'donor_or_mouse_id', 'sex', 'age',
-                'strain_or_ethnicity', 'read_length_nt', 'flagstat_mapped']
+                'strain_or_ethnicity', 'read_length_nt', 'flagstat_mapped', 'alignment_rate_pct']
+        # % of the reads (or pairs) aligned: HISAT2 overall alignment rate, or samtools flagstat 'primary mapped' %
+        # for the BAMs without a HISAT2 log (identical where both exist); built from the BAMs on 2026-11-17
+        ar = pd.read_csv('/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/metadata/alignment_rate.tsv', sep='\t')[['sample_name_used', 'alignment_rate_pct']]
+        s2 = s2.merge(ar, on='sample_name_used', how='left')
+        assert s2['alignment_rate_pct'].notna().all()
         bst.write('Table_S2', 'Supplementary Table S2: Samples',
                   'Samples used: dataset, accession, cell type group, tissue, sorting markers, cell state, treatment, donor or '
-                  'mouse identity, sex, age, strain, read length and mapped reads.', {'samples': s2[[c for c in keep if c in s2.columns]]})
+                  'mouse identity, sex, age, strain, read length, mapped reads (flagstat, including secondary alignments) '
+                  'and alignment rate (% of the reads aligned by HISAT2).', {'samples': s2[[c for c in keep if c in s2.columns]]})
 
     def s3():
         # S3: dataset, whether used and why not
@@ -90,7 +96,6 @@ def main(only=None):
         ss = read('S6', 'splice_site_subset')
         ss = ss[ss['subset'].isin(['all', 'correspondence'])][['subset', 'cell', 'testable', 'pct_DS']]
         mu = read('S6', 'minor_isoform_usage')[['usage_bin', 'DS', 'splicing conserved', 'inconclusive', 'DS %', 'splicing conserved %']]
-        sh = read('S6', 'small_shift_A3SS_A5SS')[['event_type', 'pct_DS_small', 'pct_DS_larger', 'fisher_p']]
         sc = read('S6', 'single_cell_type_DS')[['DS_in_one_cell_type', 'status_in_other_cell_types', 'percent']]
         sp = read('S6', 'species_vs_mixed_splits')
         bst.write('Table_S6', 'Supplementary Table S6: Sensitivity analyses', {
@@ -99,23 +104,20 @@ def main(only=None):
                                 'testable events and % differentially spliced (DS) per immune cell type, and the number '
                                 'of events DS in at least one cell type.',
             'common_events': 'Events testable in all 15 dataset pairs of a cell type (common_events): for each pair, '
-                             'the median max|dPSI| of the events and the Pearson r of the junction PSIs (Figure 3). '
+                             'the mean max|dPSI| of the events and the Pearson r of the junction PSIs (Figure 3). '
                              'kind: HH, human-human; MM, mouse-mouse; cross, human-mouse.',
             'splice_site': 'Testable events and % differentially spliced per cell type, among all events and among the '
                            'events with well-supported human-mouse splice-site correspondence (Methods).',
             'minor_isoform': 'Human-mouse classifications (event x cell type) by the usage of the minor isoform (PSI of '
                              'the less used isoform, averaged over the six datasets): number and % differentially '
                              'spliced, splicing conserved and inconclusive.',
-            'small_shift': "Alternative 3' (A3SS) and 5' (A5SS) splice site events: % differentially spliced among "
-                           'events with alternative splice sites up to 6 nt apart (small) and more distant (larger), '
-                           "and Fisher's exact test P.",
             'single_cell_type_DS': 'Events differentially spliced in only one immune cell type: their status in the '
                                    'other cell types (% of the event x cell type combinations).',
             'species_vs_mixed_splits': 'Number of differentially spliced events per cell type when the classification '
                                        'is applied to each split of the six datasets into two groups of three: the '
                                        'human-mouse split and the nine splits that mix the species.'},
                   {'orthology_cutoff': orth, 'common_events': ce, 'splice_site': ss,
-                   'minor_isoform': mu, 'small_shift': sh, 'single_cell_type_DS': sc,
+                   'minor_isoform': mu, 'single_cell_type_DS': sc,
                    'species_vs_mixed_splits': sp})
 
     def s7():
@@ -126,13 +128,68 @@ def main(only=None):
                   'coverage (log10 reads per sample), number of junctions and number of events per gene.', {'model': s7})
 
     def s8():
-        # S8: the orthologous coordinates of every junction (cited for the mouse coordinates)
-        x = pd.ExcelFile(FULL + f'Table_{tn.name("S8")}.xlsx')
-        j = pd.concat([pd.read_excel(x, s, header=2, usecols=range(8)) for s in x.sheet_names]).drop_duplicates(
-            'Human junction')
-        bst.write('Table_S8', 'Supplementary Table S8: Orthologous junctions',
-                  'Each junction of the alternative splicing events with its orthologous mouse junction, exon ranks, event, '
-                  'gene and event type.', {'junctions': j})
+        # S8: all the junctions of the 6,784 events (built from the event matrix, not from the LeafCutter outputs,
+        # which omit the junctions LeafCutter did not test): orthologous coordinates, and one sheet per dataset pair
+        # with, per cell type, the PSI of each group (mean over its samples with >= 20 JSRs in the event; as for
+        # max|dPSI|), dPSI = group 2 - group 1, the LeafCutter p.adjust of the event and the JSRs of the junction
+        # summed over the samples of each group
+        counts = pd.read_csv(bst.ED + 'AS_clusters_value.txt', sep='\t', index_col=0)
+        ids = counts.index.to_series()
+        ann = pd.read_csv(bst.ED + 'classification/events_annotation.tsv', sep='\t')
+        points = pd.read_csv(bst.BASE + f'orthology/unique_points_116_{bst.V}.txt', sep='\t', index_col=0)
+        j = bst.junction_annotation(ids, points, ann)
+        assert j['Human junction'].is_unique and j['Alternative splicing event ID'].nunique() == ids.str.rsplit(':', n=1).str[1].nunique(), len(j)
+        jun = pd.read_csv(bst.ED + 'effects/junction_effects.tsv', sep='\t',
+                          usecols=['intron', 'comparison', 'cell', 'group1', 'group2', 'psi1', 'psi2', 'dpsi'])
+        sheets = {'junctions': j.reset_index(drop=True)}
+        notes = {'junctions': 'Each junction of the alternative splicing events with its orthologous mouse junction, '
+                              'exon ranks, event, gene and event type.'}
+        what = ('per cell type: PSI of each group (mean over its samples with at least 20 JSRs in the event; empty if no '
+                'such sample), deltaPSI (second minus first group), LeafCutter adjusted P value of the event (empty if '
+                'LeafCutter did not test it) and the JSRs of the junction summed over the samples of each group.')
+
+        def pair_sheet(root, pair, jun, cnt):
+            out = j[['Human junction', 'Alternative splicing event ID', 'Human gene symbol']].copy()
+            for cell in CELLS + ['Fibro']:
+                d = root + f'{pair}/{cell}/'
+                if not os.path.exists(d + 'groups_file.txt'):
+                    continue
+                grp = pd.read_csv(d + 'groups_file.txt', sep='\t', header=None, names=['sample', 'group'])
+                a, b = grp['group'].unique()[:2]
+                e = jun[(jun['comparison'] == pair) & (jun['cell'] == cell)].set_index('intron')
+                assert len(e) and (e['group1'] == a).all() and (e['group2'] == b).all(), (pair, cell)
+                sig = pd.read_csv(d + 'leafcutter_ds_cluster_significance.txt', sep='\t', usecols=['cluster', 'p.adjust'])
+                padj = dict(zip(sig['cluster'], sig['p.adjust']))
+                c = 'Fibroblasts' if cell == 'Fibro' else cell
+                out[f'{c}_PSI_{a}'] = e['psi1'].reindex(ids.index).round(4)
+                out[f'{c}_PSI_{b}'] = e['psi2'].reindex(ids.index).round(4)
+                out[f'{c}_deltaPSI_{b}-{a}'] = e['dpsi'].reindex(ids.index).round(4)
+                out[f'{c}_p.adjust'] = out['Alternative splicing event ID'].map(padj)
+                for g in (a, b):
+                    sm = grp.loc[grp['group'] == g, 'sample']
+                    assert sm.isin(cnt.columns).all(), (pair, cell, g)
+                    out[f'{c}_JSR_{g}'] = cnt[sm].sum(axis=1).reindex(ids.index).astype(int)
+            return out.reset_index(drop=True)
+
+        lc = bst.ED + 'leafcutter/original/'
+        for pair in sorted(os.listdir(lc)):
+            if os.path.isdir(lc + pair):
+                sheets[pair] = pair_sheet(lc, pair, jun, counts)
+                notes[pair] = f'Dataset pair {pair.replace("_", " vs ")}, ' + what
+        # the sex, age and tissue control comparisons (Supplementary Note 1, Table S13)
+        import confounder_outputs_116 as co
+        cnt_c = pd.read_csv(bst.ED + 'AS_clusters_value_confounders.txt', sep='\t', index_col=0)
+        jun_c = pd.read_csv(bst.ED + 'effects_confounders/junction_effects.tsv', sep='\t',
+                            usecols=['intron', 'comparison', 'cell', 'group1', 'group2', 'psi1', 'psi2', 'dpsi'])
+        for comp, label, ds in co.CONTROLS:
+            sheets['control_' + comp] = pair_sheet(bst.ED + 'leafcutter/confounders/', comp, jun_c, cnt_c)
+            cell = sorted(os.listdir(bst.ED + f'leafcutter/confounders/{comp}'))[0]
+            order = pd.read_csv(bst.ED + f'leafcutter/confounders/{comp}/{cell}/groups_file.txt', sep='\t',
+                                header=None)[1].unique()[:2]
+            notes['control_' + comp] = (f'Control comparison: {label.lower()}, '
+                                        f'{" vs ".join(order).replace("_", " ")} ({ds}), ' + what)
+        bst.write('Table_S8', 'Supplementary Table S8: Orthologous junctions and their splicing in each dataset pair',
+                  notes, sheets)
 
     def s9():
         # S9: the single-pair results shown in Figure 2A-C
@@ -169,13 +226,23 @@ def main(only=None):
                   {'significant_terms': sig})
 
     def s13():
-        # S13: the control results reported in Supplementary Note 1
-        s13 = read('S13')[['comparison', 'dataset', 'cell_type', 'common_events', 'pct_DS_control',
-                           'median_abs_dpsi_control', 'median_abs_dpsi_cross', 'pearson_control', 'pearson_cross']]
+        # S13: the control results reported in Supplementary Note 1, with the replicates of each group
+        full = read('S13')
+
+        def reps(row):
+            grp = dict(g.split(': ', 1) for g in row['group_samples'].split('; '))
+            grp = {k.replace('_', ' '): len(v.split(', ')) for k, v in grp.items()}
+            a, b = row['comparison'].split('(')[1].rstrip(')').split(' vs ')
+            return pd.Series({'replicates_group1': grp[a], 'replicates_group2': grp[b]})
+        s13 = pd.concat([full[['comparison', 'dataset', 'cell_type']], full.apply(reps, axis=1),
+                         full[['common_events', 'pct_DS_control', 'mean_abs_dpsi_control', 'mean_abs_dpsi_cross',
+                               'pearson_control', 'pearson_cross']]], axis=1).rename(
+            columns={'common_events': 'testable_events'})
         bst.write('Table_S13', 'Supplementary Table S13: Sex, age and tissue controls',
-                  'Per control comparison: events (testable in the control and in all nine human-mouse pairs), % '
-                  'differentially spliced in the control, median max|dPSI| and Pearson r in the control and in the '
-                  'human-mouse pairs (cross; mean over the nine pairs).', {'controls': s13})
+                  'Per control comparison: replicates in each group (group 1 vs group 2 as in the comparison name), '
+                  'testable events (testable in the control and in all nine human-mouse pairs), % differentially '
+                  'spliced in the control, mean max|dPSI| and Pearson r in the control and in the human-mouse pairs '
+                  '(cross; mean over the nine pairs).', {'controls': s13})
 
     steps = {'S1': s1, 'S2': s2, 'S3': s3, 'S6': s6, 'S8': s8, 'S9': s9, 'S11': s11, 'S12': s12, 'S13': s13}
     for n, step in steps.items():

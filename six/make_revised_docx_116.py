@@ -235,7 +235,7 @@ def table1_rows():
         R.append(('row', ['Splicing conserved events⁶, %'] + row(k, 'EQ')))
         R.append(('row', ['Inconclusive events, %'] + row(k, 'INC')))
     notes = [
-        '¹ Immune cells: the event has a PSI in at least two samples of each of the three human and three mouse '
+        '¹ Immune cells: the event has at least 20 JSR in at least two samples of each of the three human and three mouse '
         'datasets; fibroblasts: testable in the single human-mouse fibroblast pair (E-MTAB-5919).',
         '² Immune cells: ANOVA over the six datasets adjusted P ≤ 0.05 and, in at least one junction, a difference of '
         'at least 0.1 between the mean human and the mean mouse dataset PSI, with every human-mouse |ΔPSI| more than '

@@ -2,7 +2,7 @@
 """
 Supplementary Material document of the revision (replaces the submitted Table_1.DOCX):
 Tables S4, S5 and S10 as tables, the list of supplementary data sheets (Excel), and the legends of
-Figures S1-S10.  Output: ensembl116/revision_6ds/supplementary/Supplementary_Material.docx
+Figures S1-S9.  Output: ensembl116/revision_6ds/supplementary/Supplementary_Material.docx
 """
 import glob
 import re
@@ -30,7 +30,7 @@ DATA_SHEETS = [
            'orthologous exons defined by at least 50% (main), 70% or 80% identity, or by reciprocal best matches, and '
            'the exon-rank consistency of the boundaries used by the alternative splicing events.'),
     ('S2', 'Samples used: dataset, accession, cell type group, tissue, sorting markers, cell state, treatment, donor '
-           'or mouse identity, sex, age, strain, read length and mapped reads.'),
+           'or mouse identity, sex, age, strain, read length, mapped reads and alignment rate.'),
     ('S3', 'Datasets of this study and candidate datasets from the dataset searches (Methods 2.2, published until 19 '
            'October 2026; control datasets, 19 October 2026), with a database link, whether each was '
            'used in the main and in the control analysis, and why not.'),
@@ -39,29 +39,30 @@ DATA_SHEETS = [
     ('S5', 'Compared samples: one row per comparison of two groups of samples, with the reason for the comparison.'),
     ('S6', 'Sensitivity analyses: the human-mouse classification with each orthology definition; effect sizes on the '
            'events testable in all 15 dataset pairs; events with well-supported splice-site correspondence; '
-           'classification by minor-isoform usage; alternative splice sites up to six nucleotides apart; the classification applied to the splits of the six datasets that mix the species; and the '
+           'classification by minor-isoform usage; the classification applied to the splits of the six datasets that mix the species; and the '
            'status in the other cell types of events differentially spliced in one cell type.'),
     ('S7', 'Effect of coverage, number of junctions and number of events per gene on testability and classification '
            '(logistic regression; odds ratios and P values).'),
     ('S8', 'Orthologous junctions: each junction of the alternative splicing events with its orthologous mouse '
-           'junction, the exon ranks at the junction ends, the event, the gene and the event type.'),
+           'junction, the exon ranks at the junction ends, the event, the gene and the event type; and, for each dataset '
+           'pair and cell type, and for each sex, age and tissue control comparison (Supplementary Note 1), the PSI of '
+           'each group, ΔPSI, the LeafCutter adjusted P value of the event and the JSRs of the junction in each group.'),
     ('S9', 'Single dataset pairs: for each pair of datasets and cell type, the testable events and the percentages of '
            'differentially spliced, splicing conserved and inconclusive events (Figure 2A-C).'),
     ('S10', 'Human-mouse classification of the alternative splicing events in each immune cell type: testable, '
             'differentially spliced, splicing conserved and inconclusive events.'),
     ('S11', 'Classification of each orthologous alternative splicing event in each immune cell type and in '
             'fibroblasts.'),
-    ('S12', 'Functional enrichment: the significant terms of the genes with only splicing conserved events, and the terms that '
-            'remain significant after adjusting for coverage.'),
-    ('S13', 'Sex, age and tissue control comparisons (Supplementary Note 1): events, % differentially spliced, median '
+    ('S12', 'Functional enrichment: the significant terms of the genes with only splicing conserved events and of the '
+            'genes with only differentially spliced events.'),
+    ('S13', 'Sex, age and tissue control comparisons (Supplementary Note 1): events, % differentially spliced, mean '
             'max(|ΔPSI|) and PSI correlation in the control and in the human-mouse pairs.'),
 ]
 
 FIG_LEGENDS = [
     ('Figure S1', 'The status of an orthologous alternative splicing event in a single comparison of two datasets, '
                    'or of two sample groups, in one cell type. A. Differential splicing was analyzed in each immune cell '
-                   'type between (i) each of the three human and each of the three mouse datasets (used only for effect sizes, '
-                   'Figure 3), (ii) each pair of human datasets and (iii) each pair of mouse datasets, and (iv) between human '
+                   'type between (i) each of the three human and each of the three mouse datasets, (ii) each pair of human datasets and (iii) each pair of mouse datasets, and (iv) between human '
                    'and mouse fibroblasts. B. The comparisons classified in this way (human-mouse events in immune cells '
                    'are classified only from all six datasets, Figure 1B), including the sex, age and tissue control comparisons, '
                    'and where their results are shown. C. The decision process: an event is not testable if fewer than the '
@@ -71,7 +72,7 @@ FIG_LEGENDS = [
                    'at most 0.05; and inconclusive otherwise. The human-mouse classification of each event across all six '
                    'immune cell datasets is shown in Figure 1B.'),
     ('Figure S2', 'Classification of human-mouse orthologous alternative splicing events, all events. A-C. As in '
-                  'Figure 2, but as percentages of all 6,784 orthologous alternative splicing events, including those that '
+                  'Figure 2, but as percentages of all 6,789 orthologous alternative splicing events, including those that '
                   'are not testable in the comparison (fewer than the minimal number of samples with at least 20 JSRs in a '
                   'group; Figure S1C). D-F. As in Figure 2. G. Heatmap of the events that are differentially spliced (green) '
                   'or splicing conserved (blue) in exactly two immune cell types (events in three or more are shown in Figure 2G), '
@@ -80,7 +81,7 @@ FIG_LEGENDS = [
                   'the max(|ΔPSI|) of (A) the differentially spliced and (B) the splicing conserved events ('
                   'n, number of events) in each of the three human-human (blue), three mouse-mouse (green) and nine '
                   'human-mouse (orange) comparisons in which the event is testable. Dotted line, ΔPSI = 0.1; numbers '
-                  'above the boxes, median max(|ΔPSI|). Boxes, interquartile range; line, median; whiskers, 5th-95th '
+                  'above the boxes, mean max(|ΔPSI|). Boxes, interquartile range; line, median; whiskers, 5th-95th '
                   'percentiles.'),
     ('Figure S4', 'The orthologous skipped exon 5 event in PUF60 gene displays differential splicing between human '
                   'and mouse. A. The schematics of the orthologous skipped exon event. Exons are represented by '
@@ -95,17 +96,12 @@ FIG_LEGENDS = [
                   'transcript that includes the blue junction codes for an additional Glutamine, in the human '
                   'canonical transcript, compared to the transcript that includes the light blue junction, which is '
                   'shorter by three nucleotides. B. As in Figure S4B. Colors are as in A.'),
-    ('Figure S8', 'The orthologous alternative first exon in DOCK8 gene displays a similar splicing ratio in human '
-                  'and mouse but differential splicing between immune cells. A. An orthologous alternative first '
-                  'exon. The transcript that includes the blue junction codes for a longer transcript, compared to '
-                  'the transcript with the light blue junction. The mouse transcript with the light blue junction '
-                  'biotype is protein coding, CDS not defined. B. As in Figure S4B. Colors are as in A.'),
-    ('Figure S9', 'The orthologous complex skipped exons event in PTPRC displays differential splicing between '
+    ('Figure S8', 'The orthologous complex skipped exons event in PTPRC displays differential splicing between '
                   'immune cell types and species. A. The schematics of the orthologous skipped exons event. Exons are '
                   'represented by rectangles, splicing junctions by arcs. B. As in Figure S4B. Colors are as in A; two '
                   'junctions that are part of the event in the current analysis but are not drawn in A are shown '
                   'in grey (chr1:198,692,373-198,702,387) and purple (chr1:198,699,704-198,704,472).'),
-    ('Figure S10', 'The orthologous complex skipped exons event in CD47 displays differential splicing between '
+    ('Figure S9', 'The orthologous complex skipped exons event in CD47 displays differential splicing between '
                   'species, but is similar between immune cell types. A. The schematics of the orthologous skipped '
                   'exons event. Exons are represented by rectangles, splicing junctions by arcs. B. As in Figure S4B. '
                   'Colors are as in A; the junction shown in purple in B (chr3:108,055,566-108,057,477) is part of the '
@@ -127,7 +123,7 @@ FIG_LEGENDS = [
                   'and in all nine human-mouse pairs of the cell type; for the human-human, mouse-mouse and human-mouse '
                   'dataset pairs, of all events testable in each pair, as in Figure 2C (the human-mouse pairs are '
                   'shown for comparison; human-mouse events are classified from all six datasets, Table 1). B, C. On the events testable in the control comparison and in all nine '
-                  'human-mouse pairs of the cell type. B. Median max(|ΔPSI|) of the events. C. Pearson correlation of '
+                  'human-mouse pairs of the cell type. B. Mean max(|ΔPSI|) of the events. C. Pearson correlation of '
                   'junction PSI. T4, T8 – CD4 and CD8 T cells; B – B cells; NK – NK cells; Mo – monocytes.'),
 ]
 
