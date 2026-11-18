@@ -32,8 +32,12 @@ TEXT = [
           'the junctions observed in the immune cell RNA-seq reads of each species. A junction was flagged if, in one '
           'species, it had fewer than 5% of the reads of a junction that is not part of the event, shares one end with '
           'it, has its other end within 30 nucleotides and has at least 100 reads, while in the other species it '
-          'accounted for at least 10% of the reads of the event. Events with a flagged junction (21 of 6,810 events, 0.3%) were '
-          'excluded from all analyses.'),
+          'accounted for at least 10% of the reads of the event. In addition, a boundary pair was considered unsupported '
+          'if all the exon pairs that define it were aligned over fewer than 20 nucleotides (the coding sequence of an '
+          'exon with a short coding part, where 50% identity can arise by chance) and the liftOver projection of the '
+          'human boundary did not coincide, within two nucleotides, with its mouse partner. Events with a flagged '
+          'junction (21) or with an unsupported boundary pair (36 more) were excluded from all analyses (57 of 6,810 '
+          'events, 0.8%).'),
 ]
 
 

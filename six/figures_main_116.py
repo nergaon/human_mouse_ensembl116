@@ -70,7 +70,7 @@ def label(ax, letter, x=-0.18, y=1.08):
 
 
 # ------------------------------------------------------------------ Figure 2 / S2
-def status_bars(ax, ev, k, title, fibro=None, all_events=False):
+def status_bars(ax, ev, k, title, fibro=None, all_events=False, numfont=4.8):
     """Mean over the dataset pairs (as in Table 1; each bar sums to 100%) of the % of testable events (Figure 2) or, with all_events, of all
     orthologous events, including those not testable (Figure S2)."""
     colors = ALL_COLORS if all_events else STATUS_COLORS
@@ -93,14 +93,15 @@ def status_bars(ax, ev, k, title, fibro=None, all_events=False):
                '#bdbdbd', linewidth=0.5)
         for x, (b, v, k) in enumerate(zip(bottom, df[s], counts[s])):
             if v >= 7:
-                ax.text(x, b + v / 2, f'{k:.0f}', ha='center', va='center', fontsize=4.8, color='#333333')
+                ax.text(x, b + v / 2, f'{k:.0f}', ha='center', va='center', fontsize=numfont, color='#333333',
+                        rotation=90 if numfont < 4.8 else 0)
         bottom += df[s].values
     ax.set_ylim(0, 100)
     if len(df) == 1:
         ax.set_xlim(-1.5, 1.5)
     ax.set_title(title, fontsize=8)
     ax.set_ylabel('% of all orthologous events' if all_events else '% of testable events')
-    ax.tick_params(axis='x', rotation=0)
+    ax.tick_params(axis='x', rotation=0, labelsize=6 if numfont < 4.8 else None)
 
 
 def hc_bars(ax, status):
@@ -152,7 +153,7 @@ def upset(fig, spec, status, col, cls, color, title):
     return ax1
 
 
-def heatmap(ax, status, col, fib, cells=(4, 5)):
+def heatmap(ax, status, col, fib, cells=(4, 5), only=None, genes=False, rows_out=None):
     """Events with a high-confidence class in cells[0]-cells[1] immune cell types; colors as in A-C, a dot marks
     high confidence in an immune cell type; fibroblasts by their single-pair status."""
     t = status[status['status_high'].isin(['divergent', 'conserved'])]
@@ -170,8 +171,22 @@ def heatmap(ax, status, col, fib, cells=(4, 5)):
     # DS (high confidence in any cell type) first, then equivalent; within each, by number of cell types
     high = sub.pivot_table(index='cluster', columns='cell', values='status_high', aggfunc='first').reindex(w.index)
     first = high.apply(lambda r: 2 if (r == 'divergent').any() else 1, axis=1)
+    if only is not None:   # Figure 2G split: events DS in at least one cell type ('divergent') or the others
+        first = first[first == (2 if only == 'divergent' else 1)]
+        m = m.loc[first.index]
     m = m.assign(_k=first, _n=n.reindex(m.index)).sort_values(['_k', '_n'], ascending=False).drop(columns=['_k', '_n'])
     hi = hi.reindex(m.index)
+    if rows_out is not None:   # the rows in the plotted order, for the table of Figure 2G
+        name = {'divergent': 'differentially spliced', 'DS': 'differentially spliced', 'conserved': 'splicing conserved',
+                'equivalent': 'splicing conserved', 'inconclusive': 'inconclusive', 'not testable': 'not testable',
+                'not_testable': 'not testable'}
+        ann = status.drop_duplicates('cluster').set_index('cluster')
+        t = conf.reindex(m.index).apply(lambda c: c.map(lambda v: name.get(v, v)))
+        t.columns = [{'Fibro': 'Fibroblasts (single human-mouse pair)'}.get(c, CELL_LABEL[c]) for c in t.columns]
+        t.insert(0, 'Event type', ann['event_type'].reindex(m.index).values)
+        t.insert(0, 'Event', list(m.index))
+        t.insert(0, 'Gene', ann['symbol'].reindex(m.index).values)
+        rows_out.append(t.reset_index(drop=True))
     cmap = matplotlib.colors.ListedColormap([NOT_TESTABLE, STATUS_COLORS['DS'], STATUS_COLORS['equivalent'],
                                              STATUS_COLORS['inconclusive']])
     ax.imshow(m.values, aspect='auto', cmap=cmap, vmin=0, vmax=3, interpolation='none')
@@ -185,8 +200,13 @@ def heatmap(ax, status, col, fib, cells=(4, 5)):
     # long heatmaps (Figure S2G): label every k-th row so that the labels stay readable
     step = int(np.ceil(len(m) / 150))
     rows = list(range(0, len(m), step))
-    ax.set_yticks([])   # gene symbols removed (not readable; Tal Shay)
-    ax.tick_params(axis='y', length=1, width=0.3)
+    if genes:   # one label per row (Figure 2G, split into DS and splicing conserved)
+        ax.set_yticks(range(len(m)))
+        ax.set_yticklabels(sym.reindex(m.index).astype(str), fontsize=min(5.0, 560 / max(len(m), 1)))
+        ax.tick_params(axis='y', length=0, pad=1)
+    else:
+        ax.set_yticks([])   # long heatmaps: gene symbols not readable
+    ax.tick_params(axis='y', length=1 if not genes else 0, width=0.3)
     ax.set_xticks(range(m.shape[1]))
     ax.set_xticklabels([CELL_LABEL[c] for c in m.columns], rotation=45, ha='left')
     ax.xaxis.tick_top()
@@ -197,20 +217,27 @@ def heatmap(ax, status, col, fib, cells=(4, 5)):
     return len(m)
 
 
-def figure2(ev, status, definition, name, cells):
+def figure2(ev, status, definition, name, cells, split=False):
     col = f'status_{definition}'
     all_events = definition == 'high_low'      # Figure S2 A-C: % of all orthologous events
     fib = ev[ev['comparison'] == 'FH_FM']
     fib_status = fib.set_index('cluster')[STATUS]
     fig = plt.figure(figsize=(7.2, 9.8))
-    gs = fig.add_gridspec(4, 4, width_ratios=[1, 1, 1.25, 1.1], height_ratios=[1, 1, 1.05, 1.05], hspace=0.6,
-                          wspace=0.5)
-    ax = fig.add_subplot(gs[0, 0]); status_bars(ax, ev, 'HH', 'Human-Human', all_events=all_events); label(ax, 'A')
-    ax = fig.add_subplot(gs[0, 1]); status_bars(ax, ev, 'MM', 'Mouse-Mouse', all_events=all_events)
-    ax.set_ylabel(''); label(ax, 'B')
-    ax = fig.add_subplot(gs[0, 2]); status_bars(ax, ev, 'cross', 'Human-Mouse', fib, all_events=all_events)
-    ax.set_ylabel(''); label(ax, 'C')
-    ax = fig.add_subplot(gs[1, 2]); hc_bars(ax, status); label(ax, 'D')
+    if split:   # narrower A-F, G split into differentially spliced and splicing conserved events with gene names
+        gs = fig.add_gridspec(4, 6, width_ratios=[0.8, 0.8, 1.0, 0.12, 0.6, 0.6], height_ratios=[1, 1, 1.05, 1.05],
+                              hspace=0.6, wspace=0.85)
+    else:
+        gs = fig.add_gridspec(4, 4, width_ratios=[1, 1, 1.25, 1.1], height_ratios=[1, 1, 1.05, 1.05], hspace=0.6,
+                              wspace=0.5)
+    nf = 4.2 if split else 4.8   # narrower panels: vertical numbers in the bars
+    lx = -0.42 if split else -0.18   # panel letters left of the y axis in the narrower layout
+    ax = fig.add_subplot(gs[0, 0]); status_bars(ax, ev, 'HH', 'Human-Human', all_events=all_events, numfont=nf)
+    label(ax, 'A', x=lx, y=1.12)
+    ax = fig.add_subplot(gs[0, 1]); status_bars(ax, ev, 'MM', 'Mouse-Mouse', all_events=all_events, numfont=nf)
+    ax.set_ylabel(''); label(ax, 'B', x=lx + 0.12, y=1.12)
+    ax = fig.add_subplot(gs[0, 2]); status_bars(ax, ev, 'cross', 'Human-Mouse', fib, all_events=all_events, numfont=nf)
+    ax.set_ylabel(''); label(ax, 'C', x=lx + 0.12 if split else -0.18, y=1.12 if split else 1.08)
+    ax = fig.add_subplot(gs[1, 2]); hc_bars(ax, status); label(ax, 'D', x=-0.42 if split else -0.18, y=1.12)
     # one legend for all panels, to the left of D
     lax = fig.add_subplot(gs[1, 0:2]); lax.axis('off')
     entries = [(Patch(facecolor=STATUS_COLORS['DS'], linewidth=0), 'Differentially spliced'),
@@ -224,9 +251,31 @@ def figure2(ev, status, definition, name, cells):
     label(a1, 'E', x=-0.06)
     a1 = upset(fig, gs[3, 0:3], status, col, 'conserved', HC_COLORS['conserved'], 'Splicing conserved')
     label(a1, 'F', x=-0.06)
-    ax = fig.add_subplot(gs[:, 3])
-    n = heatmap(ax, status, col, fib_status, cells)
-    label(ax, 'G', x=-0.5, y=1.02)
+    if split:
+        n, tables = 0, {}
+        for k, (cls, title) in enumerate((('divergent', 'Differentially spliced'), ('conserved', 'Splicing conserved'))):
+            ax = fig.add_subplot(gs[:, 4 + k])
+            rows = []
+            nk = heatmap(ax, status, col, fib_status, cells, only=cls, genes=True, rows_out=rows)
+            tables[title] = rows[0]
+            ax.set_title(f'{title}\n(n = {nk})', fontsize=6.5, pad=22)
+            n += nk
+            if k == 0:
+                label(ax, 'G', x=-1.9, y=1.035)
+        # the genes of Figure 2G and their status in each cell type, in the plotted order (top to bottom)
+        with pd.ExcelWriter(OUT + f'{name}G_genes.xlsx', engine='openpyxl') as xw:
+            for title, t in tables.items():
+                t.to_excel(xw, sheet_name=title, index=False)
+                ws = xw.sheets[title]
+                ws.freeze_panes = 'A2'
+                for c in ws.columns:
+                    ws.column_dimensions[c[0].column_letter].width = max(10, min(40, max(len(str(x.value)) for x in c) + 2))
+        from build_supp_tables_116 import times_new_roman
+        times_new_roman(OUT + f'{name}G_genes.xlsx')
+    else:
+        ax = fig.add_subplot(gs[:, 3])
+        n = heatmap(ax, status, col, fib_status, cells)
+        label(ax, 'G', x=-0.5, y=1.02)
     fig.text(0.02, 0.005, name.replace('_', ' '), fontsize=8)
     save(fig, name)
     return n
@@ -380,7 +429,7 @@ def main():
     status = pd.read_csv(ED + 'classification/event_status_by_cell.tsv', sep='\t')
     jun = pd.read_csv(ED + 'effects/junction_effects.tsv', sep='\t')
     usage = pd.read_csv(ED + 'revision/minor_usage_by_event.tsv', sep='\t')
-    n = figure2(ev, status, 'high', 'Figure_2', (3, 5))
+    n = figure2(ev, status, 'high', 'Figure_2', (3, 5), split=True)
     print('Figure 2G events:', n)
     n = figure2(ev, status, 'high_low', 'Figure_S2', (2, 2))
     print('Figure S2G events:', n)

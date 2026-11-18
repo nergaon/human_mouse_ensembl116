@@ -132,6 +132,7 @@ GENE_CANDIDATES = {
     'Figure_PSMD4': (PANELS + 'PSMD4_clu_42544_A.png', PANELS + 'PSMD4_clu_42544.png'),
     # alternative first exon, DS in CD8 T cells and splicing conserved in B cells
     'Figure_ATF7IP': (PANELS + 'ATF7IP_clu_11399_A.png', PANELS + 'ATF7IP_clu_11399.png'),
+    # HMGB1 (clu_15587) removed 2026-11-18: excluded by the boundary-support QC (6-nt exon pair)
 }
 
 
