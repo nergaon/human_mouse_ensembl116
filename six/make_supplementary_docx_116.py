@@ -72,7 +72,7 @@ FIG_LEGENDS = [
                    'at most 0.05; and inconclusive otherwise. The human-mouse classification of each event across all six '
                    'immune cell datasets is shown in Figure 1B.'),
     ('Figure S2', 'Classification of human-mouse orthologous alternative splicing events, all events. A-C. As in '
-                  'Figure 2, but as percentages of all 6,789 orthologous alternative splicing events, including those that '
+                  'Figure 2, but as percentages of all 6,753 orthologous alternative splicing events, including those that '
                   'are not testable in the comparison (fewer than the minimal number of samples with at least 20 JSRs in a '
                   'group; Figure S1C). D-F. As in Figure 2. G. Heatmap of the events that are differentially spliced (green) '
                   'or splicing conserved (blue) in exactly two immune cell types (events in three or more are shown in Figure 2G), '
