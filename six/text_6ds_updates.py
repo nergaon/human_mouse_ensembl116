@@ -457,8 +457,8 @@ UPDATES6 = {
         ' dataset pair. C. Percentage of the testable classifications (each event in each immune cell type) that are '
         'differentially spliced or splicing conserved between human and mouse (Figure 1B), by the usage of the minor '
         'isoform (the PSI of the less used isoform, averaged over the datasets). D. Density of the PSI of the testable '
-        'junctions in NK cells (hexagonal bins; darker, more junctions) for one human-human (H1 vs H2), mouse-mouse (M1'
-        ' vs M2) and human-mouse (H2 vs M1) comparison; line, identity; r, Pearson correlation coefficient. A, B, D: '
+        'junctions in NK cells (hexagonal bins; darker, more junctions) for one human-human (H1 vs H2), mouse-mouse (M2'
+        ' vs M3) and human-mouse (H2 vs M1) comparison; line, identity; r, Pearson correlation coefficient. A, B, D: '
         'blue, human-human; orange, human-mouse; green, mouse-mouse.'),
     228: ("Figure 4 - The orthologous alternative 3' splice site event in USP16 is differentially spliced between human "
         "and mouse B cells. A. The event at the 3' end of intron 5 in human (top) and mouse (bottom). Exons are shown "

@@ -301,7 +301,7 @@ def figure3(ev, jun, usage):
     ax.legend(fontsize=5, frameon=False, ncol=2, loc='lower center', bbox_to_anchor=(0.5, 1.0))
     label(ax, 'C', x=-0.25, y=1.2)
 
-    pairs = [('H1_H2', 'H1 (GSE60424) PSI', 'H2 (GSE115736) PSI'), ('M1_M2', 'M1 PSI', 'M2 PSI'),
+    pairs = [('H1_H2', 'H1 (GSE60424) PSI', 'H2 (GSE115736) PSI'), ('M2_M3', 'M2 PSI', 'M3 PSI'),
              ('H2_M1', 'Human (H2) PSI', 'Mouse (M1) PSI')]
     sgs = gs[2, :].subgridspec(1, 3, wspace=0.5)
     for i, (comp, xl, yl) in enumerate(pairs):
