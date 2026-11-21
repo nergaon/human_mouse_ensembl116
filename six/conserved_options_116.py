@@ -58,13 +58,12 @@ def cell_classes(counts, design, clu_all, cell):
     rng = means.max(axis=1) - means.min(axis=1)
     srng = psi[allsmp].max(axis=1) - psi[allsmp].min(axis=1)          # all samples of the six datasets
     junction = rng.groupby(clu).idxmax()
-    p = {}
-    for c, j in junction.items():
-        v = [psi.loc[j, g].dropna().to_numpy() for g in groups.values()]
-        allv = np.concatenate(v)
-        p[c] = 1.0 if np.ptp(allv) == 0 else np.nan_to_num(f_oneway(*v).pvalue, nan=1.0)
-    t = pd.DataFrame({'anova_p': pd.Series(p)})
-    t['anova_padj'] = multipletests(t['anova_p'], method='fdr_bh')[1]
+    # ANOVA P: LeafCutter, six datasets as six groups (leafcutter_anova6_116.R); it does not depend on the split
+    lc = pd.read_csv(B + f'events/id50_6ds_anova/leafcutter_anova6/{cell}.tsv', sep='\t').set_index('cluster')['p']
+    t = pd.DataFrame({'anova_p': lc.reindex(junction.index)})
+    ok = t['anova_p'].notna()
+    t['anova_padj'] = np.nan
+    t.loc[ok, 'anova_padj'] = multipletests(t.loc[ok, 'anova_p'], method='fdr_bh')[1]
     t['dataset_range'] = rng.groupby(clu).max()
     t['sample_range'] = srng.groupby(clu).max()
     pairs = list(itertools.combinations(DATASETS, 2))
@@ -76,6 +75,7 @@ def cell_classes(counts, design, clu_all, cell):
         sep = ((gap >= GAP) & (RATIO * win < btw)).groupby(clu).any()
         t['split ' + ' '.join(g1) + ' vs ' + ' '.join(g2)] = sep & (t['anova_padj'] <= FDR)
     t['DS'] = t['split H1 H2 H3 vs M1 M2 M3']
+    t = t[t['anova_p'].notna()]   # events not tested by the LeafCutter ANOVA are not testable
     t['cell'] = cell
     return t.rename_axis('cluster').reset_index()
 

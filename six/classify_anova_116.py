@@ -7,8 +7,10 @@ ANOVA junction: for each event and cell type, the junction with the largest rang
 minimum over the six datasets; the species labels are not used). PSI of a junction in a sample = junction reads /
 reads of the event (LeafCutter cluster), in samples with >= 20 reads in the event; dataset PSI = mean over those samples.
 Testable: the event has a PSI in at least two samples of each of the six datasets.
-ANOVA: one-way ANOVA (scipy.stats.f_oneway) of the sample PSI of the ANOVA junction, six datasets as groups; P adjust
-  = Benjamini-Hochberg over the testable events of the cell type.
+ANOVA: LeafCutter Dirichlet-multinomial model of all junctions of the event, six datasets as six groups, likelihood-
+  ratio test (leafcutter_anova6_116.R -> events/<variant>_anova/leafcutter_anova6/<cell>.tsv); P adjust =
+  Benjamini-Hochberg over the testable events of the cell type; events that the LeafCutter ANOVA did not test
+  (LeafCutter filters) are not testable. 'junction' = the junction with the largest range of dataset PSIs (reported, not tested).
 Splicing conserved ('conserved'): ANOVA P (not adjusted) > 0.1 and, in every junction, the dataset PSIs within a range
   of at most 0.05.
 Differentially spliced ('divergent'): ANOVA adjusted P <= 0.05 and, in at least one junction, gap >= 0.1 and
@@ -45,6 +47,14 @@ LINKS = ['AS_clusters_value.txt', 'AS_clusters_value_confounders.txt', 'junction
          'effects_confounders', 'leafcutter', 'sample_design.tsv']
 
 
+LC_P = {}   # cell -> {cluster: LeafCutter P} (filled in main)
+
+
+def lc_pvalues(variant, cell):
+    t = pd.read_csv(BASE + f'events/{variant}_anova/leafcutter_anova6/{cell}.tsv', sep='\t')
+    return dict(zip(t['cluster'], t['p']))
+
+
 def classify_cell(counts, design, clu_all, cell):
     smp = design.index[design['cell'] == cell].intersection(counts.columns)
     groups = {d: design.index[(design['cell'] == cell) & (design['dataset'] == d)].intersection(smp)
@@ -69,21 +79,22 @@ def classify_cell(counts, design, clu_all, cell):
     ds_junction = score.groupby(clu).idxmax()
     rows = []
     for c, j in junction.items():
-        v = {d: psi.loc[j, g].dropna().to_numpy() for d, g in groups.items()}
-        allv = np.concatenate(list(v.values()))
-        p_anova = 1.0 if np.ptp(allv) == 0 else f_oneway(*v.values()).pvalue
+        p_anova = LC_P[cell].get(c, np.nan)          # LeafCutter, six groups (NaN: not tested by LeafCutter)
         mu = means.loc[j]
         k = ds_junction[c]
         rows.append({'cell': cell, 'cluster': c, 'junction': j, 'n_junctions': int((clu == c).sum()),
                      **{f'PSI_{d}': round(mu[d], 4) for d in DATASETS},
-                     'max_range': max_range[c], 'anova_p': np.nan_to_num(p_anova, nan=1.0),
+                     'max_range': max_range[c], 'anova_p': p_anova,
                      'species_junction': k, 'gap': gap[k], 'max_within_dpsi': wmax[k], 'min_HM_dpsi': bmin[k],
                      'separated': bool(jsep[k])})
     t = pd.DataFrame(rows)
-    t['anova_p_adjust'] = multipletests(t['anova_p'], method='fdr_bh')[1]
+    ok = t['anova_p'].notna()
+    t['anova_p_adjust'] = np.nan
+    t.loc[ok, 'anova_p_adjust'] = multipletests(t.loc[ok, 'anova_p'], method='fdr_bh')[1]
     t['unchanged'] = (t['anova_p'] > CONS_P) & (t['max_range'] <= RANGE)
     t['DS'] = (t['anova_p_adjust'] <= FDR) & t['separated']
     t['status'] = np.select([t['DS'], t['unchanged']], ['divergent', 'conserved'], 'inconclusive')
+    t.loc[t['anova_p'].isna(), 'status'] = 'not testable'   # not tested by the LeafCutter ANOVA: untested, not inconclusive
     return t
 
 
@@ -105,6 +116,8 @@ def main():
     design = pd.read_csv(BASE + f'events/{variant}/sample_design.tsv', sep='\t').set_index('sample')
     design = design[design['dataset'].isin(DATASETS)]
     clu_all = pd.Series(counts.index.str.split(':').str[3], index=counts.index)
+    for c in CELLS:
+        LC_P[c] = lc_pvalues(variant, c)
     tests = pd.concat([classify_cell(counts, design, clu_all, c) for c in CELLS], ignore_index=True)
     tests.to_csv(new + 'classification/event_tests.tsv', sep='\t', index=False, float_format='%.6g')
     if os.path.exists(old + 'event_status_by_cell.tsv'):   # per-pair statuses (LeafCutter), id50 only
