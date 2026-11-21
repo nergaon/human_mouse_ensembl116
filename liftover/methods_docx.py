@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Methods text of the boundary-mapping correction (liftOver) and the read-based QC, as a Word file for review.
-Output: ensembl116/liftover_check/Methods_boundary_mapping.docx"""
+Output: ensembl116/revision_6ds/manuscript/Methods_boundary_mapping.docx"""
 import sys
 
 import docx
@@ -8,7 +8,7 @@ import docx
 sys.path.insert(0, '/gpfs0/tals/projects/Analysis/human_mouse_exons/scripts/ensembl116/six')
 from docx_style_116 import apply_style, explicit_sizes
 
-OUT = '/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/liftover_check/Methods_boundary_mapping.docx'
+OUT = '/gpfs0/tals/projects/Analysis/human_mouse_exons/ensembl116/revision_6ds/manuscript/Methods_boundary_mapping.docx'
 
 TEXT = [
     ('h', '2.1 Orthologous exon boundaries (added after the paragraph on the selection of the best orthologous '
